@@ -16,7 +16,6 @@ reqwest = { version = "0.12.9" , features = ["blocking", "json"] }
 anstyle = "1.0.10"
 log = "0.4.22"
 simplelog = { version = "^0.12.2", features = ["paris"] }
-log_err = "1.1.1"
 serde_json = "1.0.134"
 prettytable-rs = "0.10.0"
 serde = { version = "1.0.216", features = ["derive"] }

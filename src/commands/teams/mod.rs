@@ -2,13 +2,14 @@ pub mod args;
 pub mod handlers;
 pub mod models;
 
+use crate::commands::error::CliError;
+use crate::commands::helpers::CliContext;
 use crate::commands::teams::args::{TeamCommand, TeamSubCommand};
-use crate::commands::wrpt::GlobalArgs;
 
-pub fn handler(endpoint: TeamCommand, global_args: GlobalArgs) -> Result<(), ()> {
+pub fn handler(endpoint: TeamCommand, ctx: &CliContext) -> Result<(), CliError> {
     let command = endpoint.command;
 
     match command {
-        TeamSubCommand::List(command) => handlers::list::handler(command, global_args),
+        TeamSubCommand::List(command) => handlers::list::handler(command, ctx),
     }
 }

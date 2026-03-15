@@ -1,11 +1,11 @@
 use crate::commands::consts;
+use crate::commands::error::CliError;
 use crate::commands::stacks::handlers::list::fetch_stacks;
 use crate::commands::stacks::models::deploy::EnvVar;
 use crate::commands::wrpt::GlobalArgs;
-use log_err::LogErrResult;
 use prettytable::format::{FormatBuilder, LinePosition, LineSeparator};
 use prettytable::{cell, Cell, Row, Table};
-use reqwest::blocking::Response;
+use reqwest::blocking::{Client, Response};
 use reqwest::header::{HeaderName, HeaderValue};
 use reqwest::Url;
 use serde::de::DeserializeOwned;
@@ -15,29 +15,49 @@ use std::env;
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::PathBuf;
+use std::time::Duration;
 
-pub(crate) fn create_client(api_key: &str, insecure: bool) -> reqwest::blocking::Client {
+/// Shared context holding a reusable HTTP client and resolved configuration.
+pub(crate) struct CliContext {
+    pub client: Client,
+    pub base_url: String,
+}
+
+impl CliContext {
+    pub fn from_global_args(global_args: &GlobalArgs) -> Result<Self, CliError> {
+        let base_url = get_base_url(global_args)?;
+        let access_token = get_access_token(global_args)?;
+
+        if global_args.insecure {
+            warn!("<yellow>SSL certificate verification is disabled</>");
+        }
+
+        let client = create_client(&access_token, global_args.insecure)?;
+
+        Ok(CliContext { client, base_url })
+    }
+}
+
+pub(crate) fn create_client(api_key: &str, insecure: bool) -> Result<Client, CliError> {
+    let mut headers = reqwest::header::HeaderMap::new();
+    headers.insert(
+        HeaderName::from_static("x-api-key"),
+        HeaderValue::from_str(api_key)?,
+    );
+
     reqwest::blocking::Client::builder()
         .danger_accept_invalid_certs(insecure)
-        .default_headers({
-            let mut headers = reqwest::header::HeaderMap::new();
-            headers.insert(
-                HeaderName::from_static("x-api-key"),
-                HeaderValue::from_str(api_key).unwrap(),
-            );
-            headers
-        })
+        .timeout(Duration::from_secs(30))
+        .default_headers(headers)
         .build()
-        .unwrap()
+        .map_err(|e| CliError::Http(format!("failed to build HTTP client: {}", e)))
 }
 
 pub(crate) fn get_stack_id_from_name(
+    ctx: &CliContext,
     name: &str,
-    base_url: &str,
-    access_token: &str,
-    insecure: bool,
-) -> Result<Option<u32>, ()> {
-    let stacks = fetch_stacks(base_url, access_token, insecure)?;
+) -> Result<Option<u32>, CliError> {
+    let stacks = fetch_stacks(ctx)?;
 
     for stack in stacks {
         if stack.name.eq(name) {
@@ -48,27 +68,29 @@ pub(crate) fn get_stack_id_from_name(
     Ok(None)
 }
 
+/// Resolves a stack by name, returning its ID or an error if it doesn't exist.
+pub(crate) fn resolve_stack(ctx: &CliContext, stack_name: &str) -> Result<u32, CliError> {
+    let stack_id = get_stack_id_from_name(ctx, stack_name)?;
+    stack_id.ok_or_else(|| {
+        error!("Stack \"{}\" does not exist", stack_name);
+        CliError::Api(format!("stack \"{}\" does not exist", stack_name))
+    })
+}
+
 pub(crate) fn get_swarm_id_from_endpoint_id(
+    ctx: &CliContext,
     endpoint_id: u32,
-    url: &str,
-    access_token: &str,
-    insecure: bool,
-) -> Option<String> {
-    let mut url = url.to_string();
-    url.push_str(
-        consts::ENDPOINT_ENDPOINTS_DOCKER_INFO
-            .replace("{id}", endpoint_id.to_string().as_str())
-            .as_str(),
-    );
+) -> Result<Option<String>, CliError> {
+    let url = construct_url(
+        &ctx.base_url,
+        &consts::ENDPOINT_ENDPOINTS_DOCKER_INFO.replace("{id}", &endpoint_id.to_string()),
+    )?;
 
-    let response = create_client(access_token, insecure).get(url).send();
+    let response = ctx.client.get(url).send()?;
 
-    let body = response
-        .log_expect("invalid response from API")
-        .text()
-        .unwrap_or_default();
+    let body = response.text().unwrap_or_default();
 
-    let json = serde_json::from_str::<serde_json::Value>(body.as_str()).unwrap_or_default();
+    let json = serde_json::from_str::<serde_json::Value>(&body).unwrap_or_default();
 
     let id = json
         .get("Swarm")
@@ -79,45 +101,40 @@ pub(crate) fn get_swarm_id_from_endpoint_id(
         .unwrap_or(&Null)
         .as_str();
 
-    if id.is_some() {
-        return Some(id?.to_string());
-    }
-
-    None
+    Ok(id.map(|s| s.to_string()))
 }
 
-pub(crate) fn get_base_url(global_args: &GlobalArgs) -> Result<String, ()> {
-    match global_args
+pub(crate) fn get_base_url(global_args: &GlobalArgs) -> Result<String, CliError> {
+    global_args
         .url
         .clone()
         .or_else(|| env::var("PORTAINER_URL").ok())
-    {
-        None => {
+        .ok_or_else(|| {
             error!("param `url` or environment variable `PORTAINER_URL` should be set");
-            Err(())
-        }
-        Some(base_url) => Ok(base_url),
-    }
+            CliError::Config(
+                "param `url` or environment variable `PORTAINER_URL` should be set".to_string(),
+            )
+        })
 }
 
-pub(crate) fn get_access_token(global_args: &GlobalArgs) -> Result<String, ()> {
-    match global_args
+pub(crate) fn get_access_token(global_args: &GlobalArgs) -> Result<String, CliError> {
+    global_args
         .access_token
         .clone()
         .or_else(|| env::var("PORTAINER_ACCESS_TOKEN").ok())
-    {
-        None => {
+        .ok_or_else(|| {
             error!("param `access-token` or environment variable `PORTAINER_ACCESS_TOKEN` should be set");
-            Err(())
-        }
-        Some(access_token) => Ok(access_token),
-    }
+            CliError::Config(
+                "param `access-token` or environment variable `PORTAINER_ACCESS_TOKEN` should be set".to_string(),
+            )
+        })
 }
 
-pub(crate) fn construct_url(base_url: &str, endpoint: &str) -> Result<Url, String> {
-    let url = Url::parse(base_url).map_err(|_| "invalid base URL".to_string())?;
+pub(crate) fn construct_url(base_url: &str, endpoint: &str) -> Result<Url, CliError> {
+    let url = Url::parse(base_url)
+        .map_err(|e| CliError::Config(format!("invalid base URL \"{}\": {}", base_url, e)))?;
     url.join(endpoint)
-        .map_err(|_| "invalid endpoint path".to_string())
+        .map_err(|e| CliError::Config(format!("invalid endpoint path \"{}\": {}", endpoint, e)))
 }
 
 pub(crate) fn build_table<T>(items: &[T], columns: Option<&[&str]>) -> Table
@@ -149,7 +166,7 @@ fn extract_headers<T>(item: &T, columns: Option<&[&str]>) -> Vec<String>
 where
     T: serde::Serialize,
 {
-    let serialized = serde_json::to_value(item).log_expect("failed to serialize item");
+    let serialized = serde_json::to_value(item).unwrap_or_default();
     if let serde_json::Value::Object(map) = serialized {
         match columns {
             Some(cols) => cols.iter().map(|&col| col.to_string()).collect(),
@@ -164,7 +181,7 @@ fn extract_row<T>(item: &T, columns: Option<&[&str]>) -> Vec<Cell>
 where
     T: serde::Serialize,
 {
-    let serialized = serde_json::to_value(item).log_expect("failed to serialize item");
+    let serialized = serde_json::to_value(item).unwrap_or_default();
     if let serde_json::Value::Object(map) = serialized {
         match columns {
             Some(cols) => cols
@@ -201,7 +218,7 @@ fn process_table_value(value: &serde_json::Value) -> Cell {
     }
 }
 
-pub(crate) fn handle_api_response(response: Response) -> Result<Response, ()> {
+pub(crate) fn handle_api_response(response: Response) -> Result<Response, CliError> {
     debug!("response = {:?}", response);
 
     if !response.status().is_success() {
@@ -211,7 +228,7 @@ pub(crate) fn handle_api_response(response: Response) -> Result<Response, ()> {
             .unwrap_or_else(|_| "<unable to read response body>".to_string());
 
         // Try to parse the error response as JSON
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&body) {
+        let error_msg = if let Ok(json) = serde_json::from_str::<serde_json::Value>(&body) {
             let message = json
                 .get("message")
                 .and_then(|v| v.as_str())
@@ -225,29 +242,29 @@ pub(crate) fn handle_api_response(response: Response) -> Result<Response, ()> {
                 "<b>Api error</>: <i>{}</>\n<b>message</>: <i>{}</>\n<b>details</>: <i>{}</>",
                 status, message, details
             );
+            format!("{}: {} ({})", status, message, details)
         } else {
             // If not JSON, log the raw body
             error!(
                 "<b>Api error</>: <i>{}</>\n<b>body</>: <i>{}</>",
                 status, body
             );
-        }
+            format!("{}: {}", status, body)
+        };
 
-        return Err(());
+        return Err(CliError::Api(error_msg));
     }
 
     Ok(response)
 }
 
-pub(crate) fn parse_api_response<T>(response: Response) -> Result<Vec<T>, ()>
+pub(crate) fn parse_api_response<T>(response: Response) -> Result<Vec<T>, CliError>
 where
     T: DeserializeOwned,
 {
-    let response = handle_api_response(response)?.text().unwrap_or_else(|_| {
-        warn!("unable to read API response");
-
-        String::new()
-    });
+    let response = handle_api_response(response)?
+        .text()
+        .map_err(|e| CliError::Http(format!("unable to read API response: {}", e)))?;
 
     debug!("response_body = {:?}", response);
 
@@ -368,7 +385,6 @@ mod tests {
         let result = parse_env_file(Some(file.path().to_path_buf())).unwrap();
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].name, "KEY");
-        // split_once('=') keeps the rest, but then inline # splitting may affect it
         assert_eq!(result[0].value, "val=ue");
     }
 
@@ -417,7 +433,6 @@ mod tests {
 
     #[test]
     fn get_base_url_missing() {
-        // Clear the env var to ensure test isolation
         env::remove_var("PORTAINER_URL");
         let args = GlobalArgs {
             url: None,
@@ -471,7 +486,6 @@ mod tests {
     fn build_table_empty() {
         let items: Vec<TestItem> = vec![];
         let table = build_table(&items, None);
-        // Empty table should have no rows
         assert_eq!(table.len(), 0);
     }
 
@@ -488,7 +502,7 @@ mod tests {
             },
         ];
         let table = build_table(&items, None);
-        assert_eq!(table.len(), 2); // 2 data rows (title row not counted by len())
+        assert_eq!(table.len(), 2);
     }
 
     #[test]
@@ -498,7 +512,22 @@ mod tests {
             name: "foo".to_string(),
         }];
         let table = build_table(&items, Some(&["name"]));
-        // Should still have 1 row, but only the "name" column
         assert_eq!(table.len(), 1);
+    }
+
+    // --- create_client tests ---
+
+    #[test]
+    fn create_client_valid() {
+        let client = create_client("test-token", false);
+        assert!(client.is_ok());
+    }
+
+    // --- CliError display ---
+
+    #[test]
+    fn cli_error_display() {
+        let err = CliError::Config("test".to_string());
+        assert!(err.to_string().contains("test"));
     }
 }
