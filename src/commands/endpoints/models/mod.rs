@@ -21,3 +21,30 @@ pub(crate) enum EndpointType {
     #[serde(other)]
     Unknown = 0,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn endpoint_status_deserialize() {
+        let up: EndpointStatus = serde_json::from_str("1").unwrap();
+        assert_eq!(up, EndpointStatus::Up);
+        let down: EndpointStatus = serde_json::from_str("2").unwrap();
+        assert_eq!(down, EndpointStatus::Down);
+        let unknown: EndpointStatus = serde_json::from_str("99").unwrap();
+        assert_eq!(unknown, EndpointStatus::Unknown);
+    }
+
+    #[test]
+    fn endpoint_type_deserialize() {
+        let docker: EndpointType = serde_json::from_str("1").unwrap();
+        assert_eq!(docker, EndpointType::Docker);
+        let agent: EndpointType = serde_json::from_str("2").unwrap();
+        assert_eq!(agent, EndpointType::Agent);
+        let azure: EndpointType = serde_json::from_str("3").unwrap();
+        assert_eq!(azure, EndpointType::Azure);
+        let unknown: EndpointType = serde_json::from_str("50").unwrap();
+        assert_eq!(unknown, EndpointType::Unknown);
+    }
+}

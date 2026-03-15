@@ -1901,6 +1901,7 @@ dependencies = [
  "serde_json",
  "serde_repr",
  "simplelog",
+ "tempfile",
 ]
 
 [[package]]

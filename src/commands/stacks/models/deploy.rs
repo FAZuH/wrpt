@@ -59,3 +59,71 @@ pub(crate) struct Stack {
     pub(crate) updated_by: Option<String>,
     pub(crate) resource_control: Option<ResourceControl>,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn stack_deserialize_with_resource_control() {
+        let json = r#"{
+            "Id": 1,
+            "Name": "app",
+            "Env": [],
+            "FromAppTemplate": false,
+            "SwarmId": "",
+            "Type": 2,
+            "Status": 1,
+            "EndpointId": 3,
+            "CreationDate": 1700000000,
+            "CreatedBy": "admin",
+            "UpdateDate": null,
+            "UpdatedBy": null,
+            "ResourceControl": {
+                "Id": 1,
+                "ResourceId": "1_app",
+                "Type": 6,
+                "UserAccesses": [],
+                "TeamAccesses": [],
+                "Public": true
+            }
+        }"#;
+        let stack: Stack = serde_json::from_str(json).unwrap();
+        assert_eq!(stack.id, 1);
+        assert_eq!(stack.name, "app");
+        assert!(stack.resource_control.is_some());
+    }
+
+    #[test]
+    fn stack_deserialize_without_resource_control() {
+        let json = r#"{
+            "Id": 2,
+            "Name": "test",
+            "Env": [{"name": "KEY", "value": "val"}],
+            "FromAppTemplate": false,
+            "SwarmId": "swarm-123",
+            "Type": 1,
+            "Status": 1,
+            "EndpointId": 1,
+            "CreationDate": 1700000000,
+            "CreatedBy": "user",
+            "UpdateDate": 1700001000,
+            "UpdatedBy": "user",
+            "ResourceControl": null
+        }"#;
+        let stack: Stack = serde_json::from_str(json).unwrap();
+        assert_eq!(stack.id, 2);
+        assert!(stack.resource_control.is_none());
+    }
+
+    #[test]
+    fn env_var_serialize() {
+        let env = EnvVar {
+            name: "KEY".to_string(),
+            value: "value".to_string(),
+        };
+        let json = serde_json::to_string(&env).unwrap();
+        assert!(json.contains("\"name\":\"KEY\""));
+        assert!(json.contains("\"value\":\"value\""));
+    }
+}

@@ -110,7 +110,7 @@ pub(crate) fn get_access_token(global_args: &GlobalArgs) -> Result<String, ()> {
             error!("param `access-token` or environment variable `PORTAINER_ACCESS_TOKEN` should be set");
             Err(())
         }
-        Some(base_url) => Ok(base_url),
+        Some(access_token) => Ok(access_token),
     }
 }
 
@@ -278,16 +278,19 @@ pub(crate) fn parse_env_file(file_path: Option<PathBuf>) -> Result<Vec<EnvVar>, 
             continue;
         }
 
-        // Remove inline comments
-        let line = match line.split_once('#') {
-            Some((code, _)) => code.trim().to_string(),
-            None => line,
-        };
-
         if let Some((name, value)) = line.split_once('=') {
+            // Strip surrounding quotes from value
+            let value = value.trim();
+            let value = if (value.starts_with('"') && value.ends_with('"'))
+                || (value.starts_with('\'') && value.ends_with('\''))
+            {
+                &value[1..value.len() - 1]
+            } else {
+                value
+            };
             vars.push(EnvVar {
                 name: name.trim().to_string(),
-                value: value.trim().to_string(),
+                value: value.to_string(),
             });
         }
     }
@@ -295,14 +298,207 @@ pub(crate) fn parse_env_file(file_path: Option<PathBuf>) -> Result<Vec<EnvVar>, 
     Ok(vars)
 }
 
-// fn main() {
-//     let file_path = ".env"; // Remplacez par le chemin de votre fichier .env
-//
-//     match parse_env_file(file_path) {
-//         Ok(env_vars) => {
-//             let json_output = json!(env_vars);
-//             println!("{}", serde_json::to_string_pretty(&json_output).unwrap());
-//         }
-//         Err(e) => eprintln!("Erreur lors de la lecture du fichier .env : {}", e),
-//     }
-// }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write;
+    use tempfile::NamedTempFile;
+
+    // --- parse_env_file tests ---
+
+    fn write_temp_env(content: &str) -> NamedTempFile {
+        let mut file = NamedTempFile::new().unwrap();
+        file.write_all(content.as_bytes()).unwrap();
+        file
+    }
+
+    #[test]
+    fn parse_env_file_basic() {
+        let file = write_temp_env("KEY=value\nFOO=bar\n");
+        let result = parse_env_file(Some(file.path().to_path_buf())).unwrap();
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].name, "KEY");
+        assert_eq!(result[0].value, "value");
+        assert_eq!(result[1].name, "FOO");
+        assert_eq!(result[1].value, "bar");
+    }
+
+    #[test]
+    fn parse_env_file_comments_and_empty_lines() {
+        let file = write_temp_env("# comment\n\nKEY=value\n  # indented comment\n");
+        let result = parse_env_file(Some(file.path().to_path_buf())).unwrap();
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].name, "KEY");
+    }
+
+    #[test]
+    fn parse_env_file_hash_in_value_preserved() {
+        let file = write_temp_env("PASSWORD=abc#123\n");
+        let result = parse_env_file(Some(file.path().to_path_buf())).unwrap();
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].name, "PASSWORD");
+        assert_eq!(result[0].value, "abc#123");
+    }
+
+    #[test]
+    fn parse_env_file_quoted_value() {
+        let file = write_temp_env("KEY=\"hello world\"\nKEY2='single'\n");
+        let result = parse_env_file(Some(file.path().to_path_buf())).unwrap();
+        assert_eq!(result[0].value, "hello world");
+        assert_eq!(result[1].value, "single");
+    }
+
+    #[test]
+    fn parse_env_file_nonexistent_file() {
+        let result = parse_env_file(Some(PathBuf::from("/tmp/nonexistent_env_file_12345")));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn parse_env_file_line_without_equals() {
+        let file = write_temp_env("NOEQUALS\nKEY=value\n");
+        let result = parse_env_file(Some(file.path().to_path_buf())).unwrap();
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].name, "KEY");
+    }
+
+    #[test]
+    fn parse_env_file_value_with_equals() {
+        let file = write_temp_env("KEY=val=ue\n");
+        let result = parse_env_file(Some(file.path().to_path_buf())).unwrap();
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].name, "KEY");
+        // split_once('=') keeps the rest, but then inline # splitting may affect it
+        assert_eq!(result[0].value, "val=ue");
+    }
+
+    #[test]
+    fn parse_env_file_whitespace_trimming() {
+        let file = write_temp_env("  KEY  =  value  \n");
+        let result = parse_env_file(Some(file.path().to_path_buf())).unwrap();
+        assert_eq!(result[0].name, "KEY");
+        assert_eq!(result[0].value, "value");
+    }
+
+    // --- construct_url tests ---
+
+    #[test]
+    fn construct_url_valid() {
+        let url = construct_url("https://portainer.example.com", "/api/stacks").unwrap();
+        assert_eq!(url.as_str(), "https://portainer.example.com/api/stacks");
+    }
+
+    #[test]
+    fn construct_url_invalid_base() {
+        let result = construct_url("not-a-url", "/api/stacks");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn construct_url_with_trailing_slash() {
+        let url = construct_url("https://portainer.example.com/", "/api/stacks").unwrap();
+        assert_eq!(url.as_str(), "https://portainer.example.com/api/stacks");
+    }
+
+    // --- get_base_url tests ---
+
+    #[test]
+    fn get_base_url_from_arg() {
+        let args = GlobalArgs {
+            url: Some("https://example.com".to_string()),
+            access_token: None,
+            insecure: false,
+            verbose: 1,
+            quiet: false,
+            color: clap::ColorChoice::Auto,
+        };
+        assert_eq!(get_base_url(&args).unwrap(), "https://example.com");
+    }
+
+    #[test]
+    fn get_base_url_missing() {
+        // Clear the env var to ensure test isolation
+        env::remove_var("PORTAINER_URL");
+        let args = GlobalArgs {
+            url: None,
+            access_token: None,
+            insecure: false,
+            verbose: 1,
+            quiet: false,
+            color: clap::ColorChoice::Auto,
+        };
+        assert!(get_base_url(&args).is_err());
+    }
+
+    // --- get_access_token tests ---
+
+    #[test]
+    fn get_access_token_from_arg() {
+        let args = GlobalArgs {
+            url: None,
+            access_token: Some("my-token".to_string()),
+            insecure: false,
+            verbose: 1,
+            quiet: false,
+            color: clap::ColorChoice::Auto,
+        };
+        assert_eq!(get_access_token(&args).unwrap(), "my-token");
+    }
+
+    #[test]
+    fn get_access_token_missing() {
+        env::remove_var("PORTAINER_ACCESS_TOKEN");
+        let args = GlobalArgs {
+            url: None,
+            access_token: None,
+            insecure: false,
+            verbose: 1,
+            quiet: false,
+            color: clap::ColorChoice::Auto,
+        };
+        assert!(get_access_token(&args).is_err());
+    }
+
+    // --- build_table tests ---
+
+    #[derive(Debug, serde::Serialize)]
+    struct TestItem {
+        id: u32,
+        name: String,
+    }
+
+    #[test]
+    fn build_table_empty() {
+        let items: Vec<TestItem> = vec![];
+        let table = build_table(&items, None);
+        // Empty table should have no rows
+        assert_eq!(table.len(), 0);
+    }
+
+    #[test]
+    fn build_table_with_items() {
+        let items = vec![
+            TestItem {
+                id: 1,
+                name: "foo".to_string(),
+            },
+            TestItem {
+                id: 2,
+                name: "bar".to_string(),
+            },
+        ];
+        let table = build_table(&items, None);
+        assert_eq!(table.len(), 2); // 2 data rows (title row not counted by len())
+    }
+
+    #[test]
+    fn build_table_with_column_filter() {
+        let items = vec![TestItem {
+            id: 1,
+            name: "foo".to_string(),
+        }];
+        let table = build_table(&items, Some(&["name"]));
+        // Should still have 1 row, but only the "name" column
+        assert_eq!(table.len(), 1);
+    }
+}

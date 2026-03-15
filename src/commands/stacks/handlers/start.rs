@@ -41,7 +41,7 @@ pub(crate) fn handler(command: StackStartCommand, global_args: GlobalArgs) -> Re
         stack_id.unwrap_or_default(),
         command.endpoint,
         global_args.insecure,
-    );
+    )?;
 
     info!("Done");
 
@@ -54,7 +54,7 @@ pub(crate) fn start_stack(
     stack_id: u32,
     entrypoint_id: u32,
     insecure: bool,
-) {
+) -> Result<(), ()> {
     let url = construct_url(
         base_url,
         consts::ENDPOINT_STACKS_START
@@ -71,5 +71,6 @@ pub(crate) fn start_stack(
         .send()
         .log_expect("invalid response from API");
 
-    let _ = handle_api_response(response);
+    handle_api_response(response)?;
+    Ok(())
 }

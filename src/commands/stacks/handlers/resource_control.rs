@@ -50,7 +50,10 @@ pub(crate) fn handler(
         global_args.insecure,
     )?;
 
-    let resource_control = &stack.first().ok_or(())?.resource_control;
+    let stack = stack.first().ok_or(())?;
+    let resource_control = stack.resource_control.as_ref().ok_or_else(|| {
+        error!("Stack \"{}\" has no ResourceControl", command.stack_name);
+    })?;
 
     build_table(&[resource_control], None).printstd();
 
