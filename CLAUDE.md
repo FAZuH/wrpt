@@ -34,10 +34,11 @@ cargo build --verbose && cargo test --verbose && cargo clippy --verbose && cargo
 src/
 ├── main.rs                    # Entry point (minimal)
 └── commands/
-    ├── mod.rs                 # Command dispatch/routing
+    ├── mod.rs                 # Command dispatch/routing, CliContext initialization
     ├── wrpt.rs                # CLI args struct, logger init, global args
     ├── consts.rs              # API endpoint path constants
-    ├── helpers.rs             # Shared utilities (HTTP client, table formatting, env parsing)
+    ├── error.rs               # CliError enum (Config, Api, Io, Http)
+    ├── helpers.rs             # Shared utilities (CliContext, HTTP client, table formatting, env parsing)
     ├── stacks/                # Stack management (deploy, remove, list, start, stop, resource-control)
     │   ├── args/              # clap argument definitions
     │   ├── handlers/          # Business logic
@@ -62,7 +63,8 @@ Shared utilities live in `helpers.rs` (HTTP client factory, URL construction, ta
 ## Code Conventions
 
 - **Naming:** snake_case for modules/functions, PascalCase for structs/enums, UPPER_SNAKE_CASE for constants
-- **Error handling:** `Result<T, ()>` with `log_err` for expect-based logging
+- **Error handling:** Custom `CliError` enum (`Config`, `Api`, `Io`, `Http`) with `Result<T, CliError>` propagation via `?` operator
+- **Shared context:** `CliContext` struct holds the reusable HTTP client (with 30s timeout) and base URL, passed to all handlers
 - **HTTP:** Centralized `create_client()` in helpers; custom headers for Portainer auth (`x-api-key`)
 - **Constants:** Compile-time string formatting via `const_format` crate for API paths
 - **Output:** `prettytable-rs` for ASCII table display; `simplelog` with Paris for colored logging

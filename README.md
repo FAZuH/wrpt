@@ -12,8 +12,11 @@
 <p align="center">
     <a href="#about">About</a> •
     <a href="#roadmap">Roadmap</a> •
+    <a href="#installation">Installation</a> •
+    <a href="#quick-start">Quick Start</a> •
     <a href="#available-commands">Available Commands</a> •
     <a href="#docker">Docker</a> •
+    <a href="#cicd-integration">CI/CD Integration</a> •
     <a href="#changelog">Changelog</a> •
     <a href="#license">License</a>
 </p>
@@ -37,8 +40,8 @@ It is also my first project written in Rust and is under **active development**,
 Here are the planned enhancements and features for WRPT:  
 
 - 🚧 **Access Control Management:** Enable stack deployments with fine-grained access control, allowing assignment to specific users and/or groups.  
-- 🚧 **Comprehensive Documentation:** Write detailed usage guides, including setup instructions for integration into CI/CD pipelines on GitLab and GitHub.
-- ⏳ **Automated Testing:** Write tests to ensure the reliability and stability of the tool. 
+- ✅ **Comprehensive Documentation:** Write detailed usage guides, including setup instructions for integration into CI/CD pipelines on GitLab and GitHub.
+- ✅ **Automated Testing:** Write tests to ensure the reliability and stability of the tool.
 - 💭 **Kubernetes Compatibility:** Extend the tool to support Portainer deployments on Kubernetes environment.
 - ✅ **Automated Release Process:** Implement CI pipelines to generate changelogs and releases automatically based on versioning and commit history.
 - ✅ **Docker Image:** Create a Docker image.
@@ -49,6 +52,77 @@ Here are the planned enhancements and features for WRPT:
 - ⏳ : Pending  
 - 💭 : In reflection
 - ❌ : Abandoned 
+
+---
+
+## Installation
+
+### From crates.io
+
+```bash
+cargo install wrpt
+```
+
+### Docker
+
+```bash
+docker pull wahl/wrpt:latest
+```
+
+### From source
+
+```bash
+git clone https://github.com/wahl-dev/wrpt.git
+cd wrpt
+cargo build --release
+# Binary available at ./target/release/wrpt
+```
+
+---
+
+## Quick Start
+
+### 1. Generate a Portainer access token
+
+In your Portainer instance, go to **My Account** > **Access tokens** > **Add access token**.
+
+See the [Portainer documentation](https://docs.portainer.io/api/access#creating-an-access-token) for more details.
+
+### 2. Set your environment variables
+
+```bash
+export PORTAINER_URL="https://portainer.example.com"
+export PORTAINER_ACCESS_TOKEN="your-access-token"
+```
+
+### 3. List your endpoints
+
+```bash
+wrpt endpoint list
+```
+
+### 4. List your stacks
+
+```bash
+wrpt stack list
+```
+
+### 5. Deploy a stack
+
+```bash
+wrpt stack deploy my-stack \
+  --endpoint 1 \
+  --compose-file docker-compose.yml
+```
+
+You can also pass environment variables to the stack:
+
+```bash
+wrpt stack deploy my-stack \
+  --endpoint 1 \
+  --compose-file docker-compose.yml \
+  --env-file .env
+```
 
 ---
 
@@ -293,6 +367,93 @@ docker run -it --rm \
 
 ### Notes
 - Replace `$PORTAINER_URL` and `$PORTAINER_ACCESS_TOKEN` with your Portainer instance details.
+
+---
+
+## CI/CD Integration
+
+WRPT's Docker image makes it easy to integrate stack deployments into your CI/CD pipelines.
+
+### GitHub Actions
+
+Add this workflow to `.github/workflows/deploy.yml`:
+
+```yaml
+name: Deploy Stack
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    container:
+      image: wahl/wrpt:latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy stack
+        env:
+          PORTAINER_URL: ${{ secrets.PORTAINER_URL }}
+          PORTAINER_ACCESS_TOKEN: ${{ secrets.PORTAINER_ACCESS_TOKEN }}
+        run: |
+          wrpt stack deploy my-stack \
+            --endpoint ${{ vars.PORTAINER_ENDPOINT }} \
+            --compose-file docker-compose.yml
+```
+
+**Required secrets** (Settings > Secrets and variables > Actions):
+
+| Secret | Description |
+|--------|-------------|
+| `PORTAINER_URL` | URL of your Portainer instance (e.g. `https://portainer.example.com`) |
+| `PORTAINER_ACCESS_TOKEN` | Portainer API access token |
+
+**Required variables** (Settings > Secrets and variables > Actions > Variables):
+
+| Variable | Description |
+|----------|-------------|
+| `PORTAINER_ENDPOINT` | ID of the Portainer endpoint to deploy to |
+
+### GitLab CI
+
+Add this to your `.gitlab-ci.yml`:
+
+```yaml
+stages:
+  - deploy
+
+deploy-stack:
+  stage: deploy
+  image: wahl/wrpt:latest
+  only:
+    - main
+  script:
+    - wrpt stack deploy my-stack
+        --endpoint $PORTAINER_ENDPOINT
+        --compose-file docker-compose.yml
+  variables:
+    PORTAINER_URL: $PORTAINER_URL
+    PORTAINER_ACCESS_TOKEN: $PORTAINER_ACCESS_TOKEN
+```
+
+**Required CI/CD variables** (Settings > CI/CD > Variables):
+
+| Variable | Protected | Masked | Description |
+|----------|-----------|--------|-------------|
+| `PORTAINER_URL` | Yes | No | URL of your Portainer instance |
+| `PORTAINER_ACCESS_TOKEN` | Yes | Yes | Portainer API access token |
+| `PORTAINER_ENDPOINT` | Yes | No | ID of the Portainer endpoint |
+
+### CI/CD Best Practices
+
+- **Never hardcode tokens** in your pipeline files. Always use secrets/protected variables.
+- **Use `--insecure` only if necessary** (e.g. self-signed certificates in internal environments). Prefer proper SSL certificates.
+- **Use `-vv` for debugging** pipeline failures — it enables verbose output to help diagnose issues.
+- **Verify your endpoint first** by running `wrpt endpoint list` as a preliminary step to confirm connectivity.
+- **Pin the Docker image tag** to a specific version (e.g. `wahl/wrpt:0.6.3`) in production pipelines for reproducible deployments.
 
 ---
 
