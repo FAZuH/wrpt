@@ -2,6 +2,17 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [v0.6.4](https://github.com/wahl-dev/wrpt/compare/v0.6.3..v0.6.4) - 2026-03-19
+#### Bug Fixes
+- add 34 unit tests and fix critical bugs - ([71f77fa](https://github.com/wahl-dev/wrpt/commit/71f77fadd72e8a949f94a6cc605f77f7300ee0fb)) - Claude
+#### Documentation
+- add comprehensive documentation with installation, quick start, and CI/CD guides - ([14a9a60](https://github.com/wahl-dev/wrpt/commit/14a9a60e62f0007686a08aef78210a1cf06bacb7)) - Claude
+- add CLAUDE.md with codebase overview and development guide - ([5e20d2d](https://github.com/wahl-dev/wrpt/commit/5e20d2daf1bace4b95fd5862732c20e5e1b063eb)) - Claude
+#### Refactoring
+- replace panics with proper error handling, reuse HTTP client - ([8ec58fc](https://github.com/wahl-dev/wrpt/commit/8ec58fc8119de6a735f41f8f596c020dbbf33f59)) - Claude
+
+- - -
+
 ## [v0.6.3](https://github.com/wahl-dev/wrpt/compare/v0.6.2..v0.6.3) - 2026-01-14
 #### Bug Fixes
 - **(Dockerfile)** add curl to debian image and rename docker-compose binary to docker-compose - ([ca59ddd](https://github.com/wahl-dev/wrpt/commit/ca59dddb7506369782b54b33260009a2da59a19e)) - [@Wahib-L](https://github.com/Wahib-L)
