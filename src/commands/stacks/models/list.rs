@@ -10,15 +10,73 @@ use serde::{Deserialize, Serialize};
 pub(crate) struct StackList {
     pub(crate) id: u32,
     pub(crate) name: String,
-    r#type: StackType,
-    status: StackStatus,
-    swarm_id: String,
-    endpoint_id: u32,
+    pub(crate) r#type: StackType,
+    pub(crate) status: StackStatus,
+    pub(crate) swarm_id: String,
+    pub(crate) endpoint_id: u32,
     #[serde(deserialize_with = "from_ts")]
-    creation_date: DateTime<Utc>,
-    created_by: String,
+    pub(crate) creation_date: DateTime<Utc>,
+    pub(crate) created_by: String,
     #[serde(deserialize_with = "from_ts_option")]
-    update_date: Option<DateTime<Utc>>,
-    updated_by: Option<String>,
-    resource_control: ResourceControl,
+    pub(crate) update_date: Option<DateTime<Utc>>,
+    pub(crate) updated_by: Option<String>,
+    pub(crate) resource_control: ResourceControl,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn stack_list_deserialize() {
+        let json = r#"{
+            "Id": 1,
+            "Name": "my-stack",
+            "Type": 2,
+            "Status": 1,
+            "SwarmId": "",
+            "EndpointId": 5,
+            "CreationDate": 1700000000,
+            "CreatedBy": "admin",
+            "UpdateDate": 1700001000,
+            "UpdatedBy": "admin",
+            "ResourceControl": {
+                "Id": 10,
+                "ResourceId": "1_my-stack",
+                "Type": 6,
+                "UserAccesses": [],
+                "TeamAccesses": [],
+                "Public": true
+            }
+        }"#;
+        let stack: StackList = serde_json::from_str(json).unwrap();
+        assert_eq!(stack.id, 1);
+        assert_eq!(stack.name, "my-stack");
+    }
+
+    #[test]
+    fn stack_list_deserialize_null_update_date() {
+        let json = r#"{
+            "Id": 2,
+            "Name": "test",
+            "Type": 1,
+            "Status": 2,
+            "SwarmId": "abc123",
+            "EndpointId": 1,
+            "CreationDate": 1700000000,
+            "CreatedBy": "user",
+            "UpdateDate": null,
+            "UpdatedBy": null,
+            "ResourceControl": {
+                "Id": 5,
+                "ResourceId": "2_test",
+                "Type": 6,
+                "UserAccesses": [],
+                "TeamAccesses": [],
+                "Public": false
+            }
+        }"#;
+        let stack: StackList = serde_json::from_str(json).unwrap();
+        assert_eq!(stack.id, 2);
+    }
 }

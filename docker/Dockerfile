@@ -1,20 +1,20 @@
-FROM rust:1 AS base
+FROM rust:1.83-slim AS build
 WORKDIR /app
-RUN apt-get update && apt-get upgrade -y
-RUN rustup component add clippy
-RUN rustup component add rustfmt
-
-
-FROM base AS build
+RUN apt-get update && apt-get install -y pkg-config libssl-dev && rm -rf /var/lib/apt/lists/*
 COPY . /app
 RUN cargo build --release
 
 
 FROM debian:12-slim AS final
 
-RUN apt-get update && apt install -y openssl curl
+RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates curl \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN useradd -m -u 1000 wrpt
 
 COPY --from=build /app/target/release/wrpt /usr/bin/
-COPY --from=docker/compose-bin:latest /docker-compose /usr/bin/docker-compose
+COPY --from=docker/compose-bin:v2.32.4 /docker-compose /usr/bin/docker-compose
 
-ENTRYPOINT ["/bin/wrpt"]
+USER wrpt
+
+ENTRYPOINT ["/usr/bin/wrpt"]

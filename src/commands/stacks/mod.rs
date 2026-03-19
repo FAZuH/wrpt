@@ -2,20 +2,21 @@ pub mod args;
 pub mod handlers;
 pub mod models;
 
+use crate::commands::error::CliError;
+use crate::commands::helpers::CliContext;
 use crate::commands::stacks::args::{StackCommand, StackSubCommand};
-use crate::commands::wrpt::GlobalArgs;
 
-pub fn handler(stack: StackCommand, global_args: GlobalArgs) -> Result<(), ()> {
+pub fn handler(stack: StackCommand, ctx: &CliContext) -> Result<(), CliError> {
     let command = stack.command;
 
     match command {
-        StackSubCommand::List(command) => handlers::list::handler(command, global_args),
-        StackSubCommand::Deploy(command) => handlers::deploy::handler(command, global_args),
-        StackSubCommand::Remove(command) => handlers::remove::handler(command, global_args),
+        StackSubCommand::List(command) => handlers::list::handler(command, ctx),
+        StackSubCommand::Deploy(command) => handlers::deploy::handler(command, ctx),
+        StackSubCommand::Remove(command) => handlers::remove::handler(command, ctx),
         StackSubCommand::ResourceControl(command) => {
-            handlers::resource_control::handler(command, global_args)
+            handlers::resource_control::handler(command, ctx)
         }
-        StackSubCommand::Start(command) => handlers::start::handler(command, global_args),
-        StackSubCommand::Stop(command) => handlers::stop::handler(command, global_args),
+        StackSubCommand::Start(command) => handlers::start::handler(command, ctx),
+        StackSubCommand::Stop(command) => handlers::stop::handler(command, ctx),
     }
 }

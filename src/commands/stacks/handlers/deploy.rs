@@ -1,49 +1,40 @@
 use crate::commands::consts;
+use crate::commands::error::CliError;
 use crate::commands::helpers::{
-    build_table, construct_url, create_client, get_access_token, get_base_url,
-    get_stack_id_from_name, get_swarm_id_from_endpoint_id, parse_api_response, parse_env_file,
+    build_table, construct_url, get_stack_id_from_name, get_swarm_id_from_endpoint_id,
+    parse_api_response, parse_env_file, CliContext,
 };
 use crate::commands::stacks::args::deploy::StackDeployCommand;
 use crate::commands::stacks::models::deploy::{
     Stack, StackDeployStandaloneCreatePayload, StackDeploySwarmCreatePayload,
     StackDeployUpdatePayload,
 };
-use crate::commands::wrpt::GlobalArgs;
-use log_err::LogErrResult;
 use simplelog::{debug, info};
 use std::fs;
 
-pub(crate) fn handler(command: StackDeployCommand, global_args: GlobalArgs) -> Result<(), ()> {
+pub(crate) fn handler(command: StackDeployCommand, ctx: &CliContext) -> Result<(), CliError> {
     debug!("command = {:?}", command);
 
-    let base_url = get_base_url(&global_args)?;
-    let access_token = get_access_token(&global_args)?;
-
-    let stack_file_content =
-        fs::read_to_string(command.compose_file).log_expect("Unable to read `compose-file`");
+    let stack_file_content = fs::read_to_string(&command.compose_file).map_err(|e| {
+        CliError::Io(format!(
+            "unable to read compose file \"{}\": {}",
+            command.compose_file.display(),
+            e
+        ))
+    })?;
     debug!("stack_file_content = {:?}", stack_file_content);
 
     let env_file = parse_env_file(command.env_file).unwrap_or_default();
     debug!("env_file = {:?}", env_file);
 
     info!("Getting stack info...");
-    let stack_id = get_stack_id_from_name(
-        command.stack_name.as_str(),
-        base_url.as_str(),
-        access_token.as_str(),
-        global_args.insecure,
-    )?;
+    let stack_id = get_stack_id_from_name(ctx, command.stack_name.as_str())?;
 
     let stack: Vec<Stack> = if stack_id.is_none() {
         info!("Stack \"{}\" does not exist", command.stack_name);
 
         info!("Getting Docker info...");
-        let swarm_id = get_swarm_id_from_endpoint_id(
-            command.endpoint,
-            base_url.as_str(),
-            access_token.as_str(),
-            global_args.insecure,
-        );
+        let swarm_id = get_swarm_id_from_endpoint_id(ctx, command.endpoint)?;
 
         match swarm_id {
             Some(swarm_id) => {
@@ -61,12 +52,10 @@ pub(crate) fn handler(command: StackDeployCommand, global_args: GlobalArgs) -> R
 
                 info!("Creating Swarm stack \"{}\"", command.stack_name);
                 create_stack(
-                    base_url.as_str(),
-                    access_token.as_str(),
+                    ctx,
                     stack_create_payload,
                     command.endpoint,
                     consts::ENDPOINT_STACKS_CREATE_SWARM_STRING,
-                    global_args.insecure,
                 )?
             }
             None => {
@@ -83,12 +72,10 @@ pub(crate) fn handler(command: StackDeployCommand, global_args: GlobalArgs) -> R
 
                 info!("Creating standalone stack \"{}\"", command.stack_name);
                 create_stack(
-                    base_url.as_str(),
-                    access_token.as_str(),
+                    ctx,
                     stack_create_payload,
                     command.endpoint,
                     consts::ENDPOINT_STACKS_CREATE_STANDALONE_STRING,
-                    global_args.insecure,
                 )?
             }
         }
@@ -110,12 +97,10 @@ pub(crate) fn handler(command: StackDeployCommand, global_args: GlobalArgs) -> R
 
         info!("Updating stack \"{}\"", command.stack_name);
         update_stack(
-            base_url.as_str(),
-            access_token.as_str(),
+            ctx,
             stack_update_payload,
             stack_id.unwrap_or_default(),
             command.endpoint,
-            global_args.insecure,
         )?
     };
 
@@ -143,51 +128,44 @@ pub(crate) fn handler(command: StackDeployCommand, global_args: GlobalArgs) -> R
 }
 
 pub(crate) fn create_stack<T: serde::Serialize>(
-    base_url: &str,
-    access_token: &str,
+    ctx: &CliContext,
     stack_create_payload: T,
-    entrypoint_id: u32,
+    endpoint_id: u32,
     endpoint: &str,
-    insecure: bool,
-) -> Result<Vec<Stack>, ()> {
-    let url = construct_url(base_url, endpoint).log_expect("failed to construct url");
+) -> Result<Vec<Stack>, CliError> {
+    let url = construct_url(&ctx.base_url, endpoint)?;
 
     debug!("request = POST {:?}", url.as_str());
 
-    let response = create_client(access_token, insecure)
+    let response = ctx
+        .client
         .post(url)
         .json(&stack_create_payload)
-        .query(&[("endpointId", entrypoint_id)])
-        .send()
-        .log_expect("invalid response from API");
+        .query(&[("endpointId", endpoint_id)])
+        .send()?;
 
     parse_api_response(response)
 }
 
 pub(crate) fn update_stack(
-    base_url: &str,
-    access_token: &str,
+    ctx: &CliContext,
     stack_update_payload: StackDeployUpdatePayload,
     stack_id: u32,
-    entrypoint_id: u32,
-    insecure: bool,
-) -> Result<Vec<Stack>, ()> {
+    endpoint_id: u32,
+) -> Result<Vec<Stack>, CliError> {
     let url = construct_url(
-        base_url,
-        consts::ENDPOINT_STACKS_UPDATE
-            .replace("{id}", stack_id.to_string().as_str())
-            .as_str(),
-    )
-    .log_expect("failed to construct url");
+        &ctx.base_url,
+        &consts::ENDPOINT_STACKS_UPDATE.replace("{id}", &stack_id.to_string()),
+    )?;
 
     debug!("request = PUT {:?}", url.as_str());
 
-    let response = create_client(access_token, insecure)
+    let response = ctx
+        .client
         .put(url)
         .json(&stack_update_payload)
-        .query(&[("endpointId", entrypoint_id)])
-        .send()
-        .log_expect("invalid response from API");
+        .query(&[("endpointId", endpoint_id)])
+        .send()?;
 
     parse_api_response(response)
 }
