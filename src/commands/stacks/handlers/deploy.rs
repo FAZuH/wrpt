@@ -11,20 +11,28 @@ use crate::commands::stacks::models::deploy::{
 };
 use simplelog::{debug, info};
 use std::fs;
+use std::path::{Path, PathBuf};
 
 pub(crate) fn handler(command: StackDeployCommand, ctx: &CliContext) -> Result<(), CliError> {
     debug!("command = {:?}", command);
 
-    let stack_file_content = fs::read_to_string(&command.compose_file).map_err(|e| {
+    let StackPaths { compose, env } = get_stack_paths(
+        command.compose_file,
+        command.stack_dir,
+        command.no_env,
+        command.env_file,
+    )?;
+
+    let stack_file_content = fs::read_to_string(&compose).map_err(|e| {
         CliError::Io(format!(
             "unable to read compose file \"{}\": {}",
-            command.compose_file.display(),
+            compose.display(),
             e
         ))
     })?;
     debug!("stack_file_content = {:?}", stack_file_content);
 
-    let env_file = parse_env_file(command.env_file).unwrap_or_default();
+    let env_file = parse_env_file(env).unwrap_or_default();
     debug!("env_file = {:?}", env_file);
 
     let endpoint_id = choose_endpoint(ctx, command.endpoint, command.endpoint_name)?;
@@ -170,4 +178,70 @@ pub(crate) fn update_stack(
         .send()?;
 
     parse_api_response(response)
+}
+
+fn get_stack_paths(
+    compose_file: Option<PathBuf>,
+    stack_dir: Option<PathBuf>,
+    no_env: bool,
+    env_file: Option<PathBuf>,
+) -> Result<StackPaths, CliError> {
+    if compose_file.is_some() && stack_dir.is_some() {
+        // ambiguous
+        return Err(CliError::Config(
+            "cannot specify both --compose-file and --stack-dir".to_string(),
+        ));
+    }
+
+    if let Some(compose) = compose_file {
+        return Ok(StackPaths {
+            compose,
+            env: env_file,
+        });
+    }
+
+    if let Some(dir) = stack_dir {
+        if !dir.is_dir() {
+            return Err(CliError::Config(format!(
+                "{} is not a directory",
+                dir.display()
+            )));
+        }
+
+        let compose = join_exists(&dir, "docker-compose.yml")
+            .or_else(|| join_exists(&dir, "docker-compose.yaml"))
+            .ok_or_else(|| {
+                CliError::Config(format!(
+                    "neither docker-compose.yml nor docker-compose.yaml exists on {}",
+                    dir.display()
+                ))
+            })?;
+
+        let env = if !no_env {
+            env_file.or_else(|| join_exists(&dir, ".env"))
+        } else {
+            None
+        };
+
+        return Ok(StackPaths { compose, env });
+    }
+
+    Err(CliError::Config(
+        "requires --compose-file or --stack-dir".to_string(),
+    ))
+}
+
+/// Returns the joined path if it exists.
+fn join_exists(path: impl AsRef<Path>, join: impl AsRef<Path>) -> Option<PathBuf> {
+    let joined = path.as_ref().join(join);
+    if joined.exists() {
+        Some(joined)
+    } else {
+        None
+    }
+}
+
+struct StackPaths {
+    compose: PathBuf,
+    env: Option<PathBuf>,
 }
