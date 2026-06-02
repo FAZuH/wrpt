@@ -245,3 +245,141 @@ struct StackPaths {
     compose: PathBuf,
     env: Option<PathBuf>,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write;
+    use tempfile::NamedTempFile;
+
+    fn create_temp_dir_with_files(files: &[(&str, &str)]) -> tempfile::TempDir {
+        let dir = tempfile::TempDir::new().unwrap();
+        for (name, content) in files {
+            let path = dir.path().join(name);
+            let mut f = fs::File::create(path).unwrap();
+            f.write_all(content.as_bytes()).unwrap();
+        }
+        dir
+    }
+
+    #[test]
+    fn both_compose_file_and_stack_dir_errors() {
+        let result = get_stack_paths(
+            Some(PathBuf::from("docker-compose.yml")),
+            Some(PathBuf::from("/some/dir")),
+            false,
+            None,
+        );
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn compose_file_only_returns_path() {
+        let result =
+            get_stack_paths(Some(PathBuf::from("compose.yml")), None, false, None).unwrap();
+        assert_eq!(result.compose, PathBuf::from("compose.yml"));
+        assert!(result.env.is_none());
+    }
+
+    #[test]
+    fn compose_file_with_env_returns_both() {
+        let result = get_stack_paths(
+            Some(PathBuf::from("compose.yml")),
+            None,
+            false,
+            Some(PathBuf::from("custom.env")),
+        )
+        .unwrap();
+        assert_eq!(result.compose, PathBuf::from("compose.yml"));
+        assert_eq!(result.env, Some(PathBuf::from("custom.env")));
+    }
+
+    #[test]
+    fn stack_dir_finds_docker_compose_yml() {
+        let dir = create_temp_dir_with_files(&[("docker-compose.yml", "version: '3'")]);
+        let result = get_stack_paths(None, Some(dir.path().to_path_buf()), false, None).unwrap();
+        assert_eq!(result.compose, dir.path().join("docker-compose.yml"));
+        assert!(result.env.is_none());
+    }
+
+    #[test]
+    fn stack_dir_finds_docker_compose_yaml() {
+        let dir = create_temp_dir_with_files(&[("docker-compose.yaml", "version: '3'")]);
+        let result = get_stack_paths(None, Some(dir.path().to_path_buf()), false, None).unwrap();
+        assert_eq!(result.compose, dir.path().join("docker-compose.yaml"));
+        assert!(result.env.is_none());
+    }
+
+    #[test]
+    fn stack_dir_prefers_yml_over_yaml() {
+        let dir = create_temp_dir_with_files(&[
+            ("docker-compose.yml", "v1"),
+            ("docker-compose.yaml", "v2"),
+        ]);
+        let result = get_stack_paths(None, Some(dir.path().to_path_buf()), false, None).unwrap();
+        assert_eq!(result.compose, dir.path().join("docker-compose.yml"));
+    }
+
+    #[test]
+    fn stack_dir_no_compose_file_errors() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let result = get_stack_paths(None, Some(dir.path().to_path_buf()), false, None);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn stack_dir_not_a_directory_errors() {
+        let file = NamedTempFile::new().unwrap();
+        let result = get_stack_paths(None, Some(file.path().to_path_buf()), false, None);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn stack_dir_reads_dot_env_when_present() {
+        let dir = create_temp_dir_with_files(&[
+            ("docker-compose.yml", "version: '3'"),
+            (".env", "KEY=value"),
+        ]);
+        let result = get_stack_paths(None, Some(dir.path().to_path_buf()), false, None).unwrap();
+        assert_eq!(result.env, Some(dir.path().join(".env")));
+    }
+
+    #[test]
+    fn stack_dir_no_env_flag_skips_env() {
+        let dir = create_temp_dir_with_files(&[
+            ("docker-compose.yml", "version: '3'"),
+            (".env", "KEY=value"),
+        ]);
+        let result = get_stack_paths(None, Some(dir.path().to_path_buf()), true, None).unwrap();
+        assert!(result.env.is_none());
+    }
+
+    #[test]
+    fn stack_dir_explicit_env_overrides_dot_env() {
+        let dir = create_temp_dir_with_files(&[
+            ("docker-compose.yml", "version: '3'"),
+            (".env", "KEY=value"),
+        ]);
+        let result = get_stack_paths(
+            None,
+            Some(dir.path().to_path_buf()),
+            false,
+            Some(PathBuf::from("/custom/path/.env")),
+        )
+        .unwrap();
+        assert_eq!(result.env, Some(PathBuf::from("/custom/path/.env")));
+    }
+
+    #[test]
+    fn stack_dir_no_env_file_and_not_no_env() {
+        let dir = create_temp_dir_with_files(&[("docker-compose.yml", "version: '3'")]);
+        let result = get_stack_paths(None, Some(dir.path().to_path_buf()), false, None).unwrap();
+        assert!(result.env.is_none());
+    }
+
+    #[test]
+    fn neither_compose_nor_stack_dir_errors() {
+        let result = get_stack_paths(None, None, false, None);
+        assert!(result.is_err());
+    }
+}
