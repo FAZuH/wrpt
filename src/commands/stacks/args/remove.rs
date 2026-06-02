@@ -1,6 +1,11 @@
-use clap::Args;
+use clap::{ArgGroup, Args};
 
 #[derive(Debug, Args)]
+#[command(group(
+    ArgGroup::new("endpoint_group")
+        .args(["endpoint", "endpoint_name"])
+        .required(true)
+))]
 pub struct StackRemoveCommand {
     /// Name of the stack
     pub stack_name: String,

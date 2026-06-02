@@ -1,7 +1,12 @@
-use clap::Args;
+use clap::{ArgGroup, Args};
 use std::path::PathBuf;
 
 #[derive(Debug, Args)]
+#[command(group(
+    ArgGroup::new("endpoint_group")
+        .args(["endpoint", "endpoint_name"])
+        .required(true)
+))]
 pub struct StackDeployCommand {
     /// Name of the stack
     pub stack_name: String,
