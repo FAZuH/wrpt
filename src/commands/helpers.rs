@@ -56,21 +56,21 @@ pub(crate) fn create_client(api_key: &str, insecure: bool) -> Result<Client, Cli
 pub(crate) fn get_stack_id_from_name(
     ctx: &CliContext,
     name: &str,
+    endpoint_id: u32,
 ) -> Result<Option<u32>, CliError> {
-    let stacks = fetch_stacks(ctx)?;
-
-    for stack in stacks {
-        if stack.name.eq(name) {
-            return Ok(Some(stack.id));
-        }
-    }
-
-    Ok(None)
+    Ok(fetch_stacks(ctx)?
+        .iter()
+        .find(|s| s.name == name && s.endpoint_id == endpoint_id)
+        .map(|s| s.id))
 }
 
 /// Resolves a stack by name, returning its ID or an error if it doesn't exist.
-pub(crate) fn resolve_stack(ctx: &CliContext, stack_name: &str) -> Result<u32, CliError> {
-    let stack_id = get_stack_id_from_name(ctx, stack_name)?;
+pub(crate) fn resolve_stack(
+    ctx: &CliContext,
+    stack_name: &str,
+    endpoint_id: u32,
+) -> Result<u32, CliError> {
+    let stack_id = get_stack_id_from_name(ctx, stack_name, endpoint_id)?;
     stack_id.ok_or_else(|| {
         error!("Stack \"{}\" does not exist", stack_name);
         CliError::Api(format!("stack \"{}\" does not exist", stack_name))
