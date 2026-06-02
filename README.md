@@ -124,6 +124,18 @@ wrpt stack deploy my-stack \
   --env-file .env
 ```
 
+Or pass a directory containing your compose file and .env:
+
+```bash
+# Loads my/stack/docker-compose.yml with env my/stack/.env
+wrpt stack deploy my-stack \
+  --endpoint-name my-docker-endpoint \
+  --stack-dir my/stack/
+
+# Skip .env with --no-env
+# Or choose a different env with --env-file
+```
+
 ---
 
 ## Available Commands
@@ -169,7 +181,7 @@ wrpt stack deploy my-stack \
 ```
 Deploy a stack
 
-Usage: wrpt stack deploy [OPTIONS] --compose-file <COMPOSE_FILE> <--endpoint <ENDPOINT>|--endpoint-name <ENDPOINT_NAME>> <STACK_NAME>
+Usage: wrpt stack deploy [OPTIONS] <--endpoint <ENDPOINT>|--endpoint-name <ENDPOINT_NAME>> <--compose-file <COMPOSE_FILE>|--stack-dir <STACK_DIR>> <STACK_NAME>
 
 Arguments:
   <STACK_NAME>  Name of the stack
@@ -181,11 +193,13 @@ Options:
   -n, --endpoint-name <ENDPOINT_NAME>  Name of the environment (endpoint) that will be used
   -c, --compose-file <COMPOSE_FILE>    Path to docker compose/stack file
       --insecure                       Skip the host's SSL certificate verification, use at your own risk
-  -e, --env-file <ENV_FILE>            Path to a file of environment variables, to be used by the stack
+  -s, --stack-dir <STACK_DIR>          Path to directory containing docker compose and optional .env file
   -v...                                Increase the verbosity of messages: 1 for normal output, 2 for more verbose output, 3 for debug and 4 for trace
-      --prune                          Whether to prune unused containers or not
+      --no-env                         When used with --stack-dir, skip loading the .env file from that directory
   -q, --quiet                          Do not output any message
       --color <COLOR>                  When to use terminal colours [default: auto] [possible values: auto, always, never]
+  -e, --env-file <ENV_FILE>            Path to a file of environment variables, to be used by the stack
+      --prune                          Whether to prune unused containers or not
       --pull-image                     Force a pulling to current image with the original tag though the image is already the latest
   -h, --help                           Print help
 ```
