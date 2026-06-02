@@ -1,7 +1,7 @@
 use crate::commands::consts;
 use crate::commands::error::CliError;
 use crate::commands::helpers::{
-    build_table, construct_url, parse_api_response, resolve_stack, CliContext,
+    build_table, choose_endpoint, construct_url, parse_api_response, resolve_stack, CliContext,
 };
 use crate::commands::stacks::args::resource_control::StackResourceControlCommand;
 use crate::commands::stacks::models::deploy::Stack;
@@ -21,11 +21,13 @@ pub(crate) fn handler(
         command.stack_name, stack_id
     );
 
+    let endpoint_id = choose_endpoint(ctx, command.endpoint, command.endpoint_name)?;
+
     info!(
         "Display the ResourceControl details of stack \"{}\"",
         command.stack_name
     );
-    let stack = inspect_stack(ctx, stack_id, command.endpoint)?;
+    let stack = inspect_stack(ctx, stack_id, endpoint_id)?;
 
     let stack = stack.first().ok_or_else(|| {
         CliError::Api(format!(

@@ -1,4 +1,5 @@
 use crate::commands::consts;
+use crate::commands::endpoints::handlers::list::fetch_endpoints;
 use crate::commands::error::CliError;
 use crate::commands::stacks::handlers::list::fetch_stacks;
 use crate::commands::stacks::models::deploy::EnvVar;
@@ -68,6 +69,16 @@ pub(crate) fn get_stack_id_from_name(
     Ok(None)
 }
 
+pub(crate) fn get_endpoint_id_from_name(
+    ctx: &CliContext,
+    name: &str,
+) -> Result<Option<u32>, CliError> {
+    Ok(fetch_endpoints(ctx)?
+        .iter()
+        .find(|s| s.name == name)
+        .map(|s| s.id))
+}
+
 /// Resolves a stack by name, returning its ID or an error if it doesn't exist.
 pub(crate) fn resolve_stack(ctx: &CliContext, stack_name: &str) -> Result<u32, CliError> {
     let stack_id = get_stack_id_from_name(ctx, stack_name)?;
@@ -75,6 +86,30 @@ pub(crate) fn resolve_stack(ctx: &CliContext, stack_name: &str) -> Result<u32, C
         error!("Stack \"{}\" does not exist", stack_name);
         CliError::Api(format!("stack \"{}\" does not exist", stack_name))
     })
+}
+
+/// Resolves an endpoint by name, returning its ID or an error if it doesn't exist.
+pub(crate) fn resolve_endpoint(ctx: &CliContext, endpoint_name: &str) -> Result<u32, CliError> {
+    let endpoint_id = get_endpoint_id_from_name(ctx, endpoint_name)?;
+    endpoint_id.ok_or_else(|| {
+        error!("Endpoint \"{}\" does not exist", endpoint_name);
+        CliError::Api(format!("endpoint \"{}\" does not exist", endpoint_name))
+    })
+}
+
+/// Returns an endpoint ID from either an explicit ID or a name lookup.
+pub(crate) fn choose_endpoint(
+    ctx: &CliContext,
+    endpoint_id: Option<u32>,
+    endpoint_name: Option<String>,
+) -> Result<u32, CliError> {
+    match (endpoint_id, endpoint_name) {
+        (Some(id), _) => Ok(id),
+        (None, Some(name)) => resolve_endpoint(ctx, &name),
+        (None, None) => Err(CliError::Config(
+            "param `endpoint_id` or `endpoint_name` must be set".to_string(),
+        )),
+    }
 }
 
 pub(crate) fn get_swarm_id_from_endpoint_id(
