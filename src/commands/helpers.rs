@@ -558,6 +558,36 @@ mod tests {
         assert!(client.is_ok());
     }
 
+    // --- choose_endpoint tests ---
+
+    fn dummy_context() -> CliContext {
+        CliContext {
+            client: create_client("test-token", false).unwrap(),
+            base_url: "https://example.com".to_string(),
+        }
+    }
+
+    #[test]
+    fn choose_endpoint_returns_id_directly() {
+        let ctx = dummy_context();
+        let result = choose_endpoint(&ctx, Some(42), None);
+        assert_eq!(result.unwrap(), 42);
+    }
+
+    #[test]
+    fn choose_endpoint_id_takes_priority_over_name() {
+        let ctx = dummy_context();
+        let result = choose_endpoint(&ctx, Some(42), Some("ignored".to_string()));
+        assert_eq!(result.unwrap(), 42);
+    }
+
+    #[test]
+    fn choose_endpoint_missing_both_errors() {
+        let ctx = dummy_context();
+        let result = choose_endpoint(&ctx, None, None);
+        assert!(matches!(result.unwrap_err(), CliError::Config(_)));
+    }
+
     // --- CliError display ---
 
     #[test]
