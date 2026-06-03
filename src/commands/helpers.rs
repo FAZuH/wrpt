@@ -523,6 +523,85 @@ mod tests {
         assert!(client.is_ok());
     }
 
+    // --- get_stack_id_from_name tests ---
+
+    #[test]
+    fn get_stack_id_from_name_filters_by_endpoint_id() {
+        let mut server = mockito::Server::new();
+        let mock = server
+            .mock("GET", "/api/stacks")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(
+                r#"[
+                {
+                    "Id": 1,
+                    "Name": "my-stack",
+                    "Type": 2,
+                    "Status": 1,
+                    "SwarmId": "",
+                    "EndpointId": 5,
+                    "CreationDate": 1700000000,
+                    "CreatedBy": "admin",
+                    "UpdateDate": null,
+                    "UpdatedBy": null,
+                    "ResourceControl": {
+                        "Id": 10,
+                        "ResourceId": "1_my-stack",
+                        "Type": 6,
+                        "UserAccesses": [],
+                        "TeamAccesses": [],
+                        "Public": true
+                    }
+                },
+                {
+                    "Id": 2,
+                    "Name": "my-stack",
+                    "Type": 2,
+                    "Status": 1,
+                    "SwarmId": "",
+                    "EndpointId": 8,
+                    "CreationDate": 1700000000,
+                    "CreatedBy": "admin",
+                    "UpdateDate": null,
+                    "UpdatedBy": null,
+                    "ResourceControl": {
+                        "Id": 11,
+                        "ResourceId": "2_my-stack",
+                        "Type": 6,
+                        "UserAccesses": [],
+                        "TeamAccesses": [],
+                        "Public": false
+                    }
+                }
+            ]"#,
+            )
+            .expect(3)
+            .create();
+
+        let ctx = CliContext {
+            client: create_client("test-token", false).unwrap(),
+            base_url: server.url(),
+        };
+
+        // Same name on endpoint 5 → returns stack id 1
+        assert_eq!(
+            get_stack_id_from_name(&ctx, "my-stack", 5).unwrap(),
+            Some(1)
+        );
+
+        // Same name on endpoint 8 → returns stack id 2 (not 1!)
+        assert_eq!(
+            get_stack_id_from_name(&ctx, "my-stack", 8).unwrap(),
+            Some(2)
+        );
+
+        // No stack on endpoint 99 → returns None
+        assert_eq!(get_stack_id_from_name(&ctx, "my-stack", 99).unwrap(), None);
+
+        mock.assert();
+    }
+
     // --- CliError display ---
 
     #[test]
