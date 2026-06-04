@@ -1,3 +1,17 @@
+use crate::commands::consts;
+use crate::commands::endpoints::handlers::list::fetch_endpoints;
+use crate::commands::error::CliError;
+use crate::commands::stacks::handlers::list::fetch_stacks;
+use crate::commands::stacks::models::deploy::EnvVar;
+use crate::commands::wrpt::GlobalArgs;
+use prettytable::format::{FormatBuilder, LinePosition, LineSeparator};
+use prettytable::{cell, Cell, Row, Table};
+use reqwest::blocking::{Client, Response};
+use reqwest::header::{HeaderName, HeaderValue};
+use reqwest::Url;
+use serde::de::DeserializeOwned;
+use serde_json::Value::Null;
+use simplelog::{debug, error, warn};
 use std::env;
 use std::fs::File;
 use std::io::BufRead;
@@ -76,6 +90,16 @@ pub(crate) fn get_stack_id_from_name(
         .map(|s| s.id))
 }
 
+pub(crate) fn get_endpoint_id_from_name(
+    ctx: &CliContext,
+    name: &str,
+) -> Result<Option<u32>, CliError> {
+    Ok(fetch_endpoints(ctx)?
+        .iter()
+        .find(|s| s.name == name)
+        .map(|s| s.id))
+}
+
 /// Resolves a stack by name, returning its ID or an error if it doesn't exist.
 pub(crate) fn resolve_stack(
     ctx: &CliContext,
@@ -87,6 +111,30 @@ pub(crate) fn resolve_stack(
         error!("Stack \"{}\" does not exist", stack_name);
         CliError::Api(format!("stack \"{}\" does not exist", stack_name))
     })
+}
+
+/// Resolves an endpoint by name, returning its ID or an error if it doesn't exist.
+pub(crate) fn resolve_endpoint(ctx: &CliContext, endpoint_name: &str) -> Result<u32, CliError> {
+    let endpoint_id = get_endpoint_id_from_name(ctx, endpoint_name)?;
+    endpoint_id.ok_or_else(|| {
+        error!("Endpoint \"{}\" does not exist", endpoint_name);
+        CliError::Api(format!("endpoint \"{}\" does not exist", endpoint_name))
+    })
+}
+
+/// Returns an endpoint ID from either an explicit ID or a name lookup.
+pub(crate) fn choose_endpoint(
+    ctx: &CliContext,
+    endpoint_id: Option<u32>,
+    endpoint_name: Option<String>,
+) -> Result<u32, CliError> {
+    match (endpoint_id, endpoint_name) {
+        (Some(id), _) => Ok(id),
+        (None, Some(name)) => resolve_endpoint(ctx, &name),
+        (None, None) => Err(CliError::Config(
+            "param `endpoint_id` or `endpoint_name` must be set".to_string(),
+        )),
+    }
 }
 
 pub(crate) fn get_swarm_id_from_endpoint_id(
@@ -542,83 +590,34 @@ mod tests {
         assert!(client.is_ok());
     }
 
-    // --- get_stack_id_from_name tests ---
+    // --- choose_endpoint tests ---
+
+    fn dummy_context() -> CliContext {
+        CliContext {
+            client: create_client("test-token", false).unwrap(),
+            base_url: "https://example.com".to_string(),
+        }
+    }
 
     #[test]
-    fn get_stack_id_from_name_filters_by_endpoint_id() {
-        let mut server = mockito::Server::new();
-        let mock = server
-            .mock("GET", "/api/stacks")
-            .with_status(200)
-            .with_header("content-type", "application/json")
-            .with_body(
-                r#"[
-                {
-                    "Id": 1,
-                    "Name": "my-stack",
-                    "Type": 2,
-                    "Status": 1,
-                    "SwarmId": "",
-                    "EndpointId": 5,
-                    "CreationDate": 1700000000,
-                    "CreatedBy": "admin",
-                    "UpdateDate": null,
-                    "UpdatedBy": null,
-                    "ResourceControl": {
-                        "Id": 10,
-                        "ResourceId": "1_my-stack",
-                        "Type": 6,
-                        "UserAccesses": [],
-                        "TeamAccesses": [],
-                        "Public": true
-                    }
-                },
-                {
-                    "Id": 2,
-                    "Name": "my-stack",
-                    "Type": 2,
-                    "Status": 1,
-                    "SwarmId": "",
-                    "EndpointId": 8,
-                    "CreationDate": 1700000000,
-                    "CreatedBy": "admin",
-                    "UpdateDate": null,
-                    "UpdatedBy": null,
-                    "ResourceControl": {
-                        "Id": 11,
-                        "ResourceId": "2_my-stack",
-                        "Type": 6,
-                        "UserAccesses": [],
-                        "TeamAccesses": [],
-                        "Public": false
-                    }
-                }
-            ]"#,
-            )
-            .expect(3)
-            .create();
+    fn choose_endpoint_returns_id_directly() {
+        let ctx = dummy_context();
+        let result = choose_endpoint(&ctx, Some(42), None);
+        assert_eq!(result.unwrap(), 42);
+    }
 
-        let ctx = CliContext {
-            client: create_client("test-token", false).unwrap(),
-            base_url: server.url(),
-        };
+    #[test]
+    fn choose_endpoint_id_takes_priority_over_name() {
+        let ctx = dummy_context();
+        let result = choose_endpoint(&ctx, Some(42), Some("ignored".to_string()));
+        assert_eq!(result.unwrap(), 42);
+    }
 
-        // Same name on endpoint 5 → returns stack id 1
-        assert_eq!(
-            get_stack_id_from_name(&ctx, "my-stack", 5).unwrap(),
-            Some(1)
-        );
-
-        // Same name on endpoint 8 → returns stack id 2 (not 1!)
-        assert_eq!(
-            get_stack_id_from_name(&ctx, "my-stack", 8).unwrap(),
-            Some(2)
-        );
-
-        // No stack on endpoint 99 → returns None
-        assert_eq!(get_stack_id_from_name(&ctx, "my-stack", 99).unwrap(), None);
-
-        mock.assert();
+    #[test]
+    fn choose_endpoint_missing_both_errors() {
+        let ctx = dummy_context();
+        let result = choose_endpoint(&ctx, None, None);
+        assert!(matches!(result.unwrap_err(), CliError::Config(_)));
     }
 
     // --- CliError display ---

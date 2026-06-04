@@ -5,13 +5,10 @@ use simplelog::info;
 
 use crate::commands::consts;
 use crate::commands::error::CliError;
-use crate::commands::helpers::CliContext;
-use crate::commands::helpers::build_table;
-use crate::commands::helpers::construct_url;
-use crate::commands::helpers::get_stack_id_from_name;
-use crate::commands::helpers::get_swarm_id_from_endpoint_id;
-use crate::commands::helpers::parse_api_response;
-use crate::commands::helpers::parse_env_file;
+use crate::commands::helpers::{
+    build_table, choose_endpoint, construct_url, get_stack_id_from_name,
+    get_swarm_id_from_endpoint_id, parse_api_response, parse_env_file, CliContext,
+};
 use crate::commands::stacks::args::deploy::StackDeployCommand;
 use crate::commands::stacks::models::deploy::Stack;
 use crate::commands::stacks::models::deploy::StackDeployStandaloneCreatePayload;
@@ -33,6 +30,8 @@ pub(crate) fn handler(command: StackDeployCommand, ctx: &CliContext) -> Result<(
     let env_file = parse_env_file(command.env_file).unwrap_or_default();
     debug!("env_file = {:?}", env_file);
 
+    let endpoint_id = choose_endpoint(ctx, command.endpoint, command.endpoint_name)?;
+
     info!("Getting stack info...");
     let stack_id = get_stack_id_from_name(ctx, command.stack_name.as_str(), command.endpoint)?;
 
@@ -40,7 +39,7 @@ pub(crate) fn handler(command: StackDeployCommand, ctx: &CliContext) -> Result<(
         info!("Stack \"{}\" does not exist", command.stack_name);
 
         info!("Getting Docker info...");
-        let swarm_id = get_swarm_id_from_endpoint_id(ctx, command.endpoint)?;
+        let swarm_id = get_swarm_id_from_endpoint_id(ctx, endpoint_id)?;
 
         match swarm_id {
             Some(swarm_id) => {
@@ -60,7 +59,7 @@ pub(crate) fn handler(command: StackDeployCommand, ctx: &CliContext) -> Result<(
                 create_stack(
                     ctx,
                     stack_create_payload,
-                    command.endpoint,
+                    endpoint_id,
                     consts::ENDPOINT_STACKS_CREATE_SWARM_STRING,
                 )?
             }
@@ -80,7 +79,7 @@ pub(crate) fn handler(command: StackDeployCommand, ctx: &CliContext) -> Result<(
                 create_stack(
                     ctx,
                     stack_create_payload,
-                    command.endpoint,
+                    endpoint_id,
                     consts::ENDPOINT_STACKS_CREATE_STANDALONE_STRING,
                 )?
             }
@@ -106,7 +105,7 @@ pub(crate) fn handler(command: StackDeployCommand, ctx: &CliContext) -> Result<(
             ctx,
             stack_update_payload,
             stack_id.unwrap_or_default(),
-            command.endpoint,
+            endpoint_id,
         )?
     };
 

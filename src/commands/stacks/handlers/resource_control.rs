@@ -4,11 +4,9 @@ use simplelog::info;
 
 use crate::commands::consts;
 use crate::commands::error::CliError;
-use crate::commands::helpers::CliContext;
-use crate::commands::helpers::build_table;
-use crate::commands::helpers::construct_url;
-use crate::commands::helpers::parse_api_response;
-use crate::commands::helpers::resolve_stack;
+use crate::commands::helpers::{
+    build_table, choose_endpoint, construct_url, parse_api_response, resolve_stack, CliContext,
+};
 use crate::commands::stacks::args::resource_control::StackResourceControlCommand;
 use crate::commands::stacks::models::deploy::Stack;
 
@@ -26,11 +24,13 @@ pub(crate) fn handler(
         command.stack_name, stack_id
     );
 
+    let endpoint_id = choose_endpoint(ctx, command.endpoint, command.endpoint_name)?;
+
     info!(
         "Display the ResourceControl details of stack \"{}\"",
         command.stack_name
     );
-    let stack = inspect_stack(ctx, stack_id, command.endpoint)?;
+    let stack = inspect_stack(ctx, stack_id, endpoint_id)?;
 
     let stack = stack.first().ok_or_else(|| {
         CliError::Api(format!(
