@@ -1,22 +1,25 @@
 use std::fs;
+use std::path::Path;
+use std::path::PathBuf;
 
 use simplelog::debug;
 use simplelog::info;
 
 use crate::commands::consts;
 use crate::commands::error::CliError;
-use crate::commands::helpers::{
-    build_table, choose_endpoint, construct_url, get_stack_id_from_name,
-    get_swarm_id_from_endpoint_id, parse_api_response, parse_env_file, CliContext,
-};
+use crate::commands::helpers::CliContext;
+use crate::commands::helpers::build_table;
+use crate::commands::helpers::choose_endpoint;
+use crate::commands::helpers::construct_url;
+use crate::commands::helpers::get_stack_id_from_name;
+use crate::commands::helpers::get_swarm_id_from_endpoint_id;
+use crate::commands::helpers::parse_api_response;
+use crate::commands::helpers::parse_env_file;
 use crate::commands::stacks::args::deploy::StackDeployCommand;
-use crate::commands::stacks::models::deploy::{
-    Stack, StackDeployStandaloneCreatePayload, StackDeploySwarmCreatePayload,
-    StackDeployUpdatePayload,
-};
-use simplelog::{debug, info};
-use std::fs;
-use std::path::{Path, PathBuf};
+use crate::commands::stacks::models::deploy::Stack;
+use crate::commands::stacks::models::deploy::StackDeployStandaloneCreatePayload;
+use crate::commands::stacks::models::deploy::StackDeploySwarmCreatePayload;
+use crate::commands::stacks::models::deploy::StackDeployUpdatePayload;
 
 pub(crate) fn handler(command: StackDeployCommand, ctx: &CliContext) -> Result<(), CliError> {
     debug!("command = {:?}", command);
@@ -43,7 +46,7 @@ pub(crate) fn handler(command: StackDeployCommand, ctx: &CliContext) -> Result<(
     let endpoint_id = choose_endpoint(ctx, command.endpoint, command.endpoint_name)?;
 
     info!("Getting stack info...");
-    let stack_id = get_stack_id_from_name(ctx, command.stack_name.as_str(), command.endpoint)?;
+    let stack_id = get_stack_id_from_name(ctx, command.stack_name.as_str(), endpoint_id)?;
 
     let stack: Vec<Stack> = if stack_id.is_none() {
         info!("Stack \"{}\" does not exist", command.stack_name);
@@ -239,11 +242,7 @@ fn get_stack_paths(
 /// Returns the joined path if it exists.
 fn join_exists(path: impl AsRef<Path>, join: impl AsRef<Path>) -> Option<PathBuf> {
     let joined = path.as_ref().join(join);
-    if joined.exists() {
-        Some(joined)
-    } else {
-        None
-    }
+    if joined.exists() { Some(joined) } else { None }
 }
 
 struct StackPaths {
@@ -253,9 +252,11 @@ struct StackPaths {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::io::Write;
+
     use tempfile::NamedTempFile;
+
+    use super::*;
 
     fn create_temp_dir_with_files(files: &[(&str, &str)]) -> tempfile::TempDir {
         let dir = tempfile::TempDir::new().unwrap();

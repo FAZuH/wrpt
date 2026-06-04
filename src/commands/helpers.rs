@@ -1,17 +1,3 @@
-use crate::commands::consts;
-use crate::commands::endpoints::handlers::list::fetch_endpoints;
-use crate::commands::error::CliError;
-use crate::commands::stacks::handlers::list::fetch_stacks;
-use crate::commands::stacks::models::deploy::EnvVar;
-use crate::commands::wrpt::GlobalArgs;
-use prettytable::format::{FormatBuilder, LinePosition, LineSeparator};
-use prettytable::{cell, Cell, Row, Table};
-use reqwest::blocking::{Client, Response};
-use reqwest::header::{HeaderName, HeaderValue};
-use reqwest::Url;
-use serde::de::DeserializeOwned;
-use serde_json::Value::Null;
-use simplelog::{debug, error, warn};
 use std::env;
 use std::fs::File;
 use std::io::BufRead;
@@ -39,6 +25,7 @@ use simplelog::warn;
 
 use crate::commands::autoport::GlobalArgs;
 use crate::commands::consts;
+use crate::commands::endpoints::handlers::list::fetch_endpoints;
 use crate::commands::error::CliError;
 use crate::commands::stacks::handlers::list::fetch_stacks;
 use crate::commands::stacks::models::deploy::EnvVar;
