@@ -1,9 +1,14 @@
-use crate::commands::Command;
-use clap::{Args, ColorChoice as ClapColorChoice, Parser};
+use clap::Args;
+use clap::ColorChoice as ClapColorChoice;
+use clap::Parser;
 use log::LevelFilter;
-use simplelog::{
-    ColorChoice as SimpleLogColorChoice, CombinedLogger, Config, TermLogger, TerminalMode,
-};
+use simplelog::ColorChoice as SimpleLogColorChoice;
+use simplelog::CombinedLogger;
+use simplelog::Config;
+use simplelog::TermLogger;
+use simplelog::TerminalMode;
+
+use crate::commands::Command;
 
 #[derive(Debug, Parser)]
 #[command(author, version, about, long_about = None, styles=get_styles())]

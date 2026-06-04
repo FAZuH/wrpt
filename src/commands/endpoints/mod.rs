@@ -2,7 +2,8 @@ pub mod args;
 pub mod handlers;
 pub mod models;
 
-use crate::commands::endpoints::args::{EndpointCommand, EndpointSubCommand};
+use crate::commands::endpoints::args::EndpointCommand;
+use crate::commands::endpoints::args::EndpointSubCommand;
 use crate::commands::error::CliError;
 use crate::commands::helpers::CliContext;
 

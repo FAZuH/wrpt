@@ -1,7 +1,9 @@
 pub(crate) mod list;
 
+use clap::Args;
+use clap::Subcommand;
+
 use crate::commands::users::args::list::UserListCommand;
-use clap::{Args, Subcommand};
 
 #[derive(Debug, Args)]
 pub struct UserCommand {

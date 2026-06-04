@@ -1,7 +1,9 @@
 pub(crate) mod list;
 
+use clap::Args;
+use clap::Subcommand;
+
 use crate::commands::teams::args::list::TeamListCommand;
-use clap::{Args, Subcommand};
 
 #[derive(Debug, Args)]
 pub struct TeamCommand {

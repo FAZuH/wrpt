@@ -1,5 +1,6 @@
-use clap::Args;
 use std::path::PathBuf;
+
+use clap::Args;
 
 #[derive(Debug, Args)]
 pub struct StackDeployCommand {

@@ -1,4 +1,5 @@
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 use serde_repr::Deserialize_repr;
 
 #[derive(Debug, Serialize, Deserialize)]

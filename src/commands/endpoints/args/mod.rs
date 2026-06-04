@@ -1,7 +1,9 @@
 pub(crate) mod list;
 
+use clap::Args;
+use clap::Subcommand;
+
 use crate::commands::endpoints::args::list::EndpointListCommand;
-use clap::{Args, Subcommand};
 
 #[derive(Debug, Args)]
 pub struct EndpointCommand {

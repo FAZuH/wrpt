@@ -4,7 +4,8 @@ pub mod models;
 
 use crate::commands::error::CliError;
 use crate::commands::helpers::CliContext;
-use crate::commands::users::args::{UserCommand, UserSubCommand};
+use crate::commands::users::args::UserCommand;
+use crate::commands::users::args::UserSubCommand;
 
 pub fn handler(endpoint: UserCommand, ctx: &CliContext) -> Result<(), CliError> {
     let command = endpoint.command;

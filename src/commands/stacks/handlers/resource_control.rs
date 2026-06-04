@@ -1,11 +1,16 @@
+use simplelog::debug;
+use simplelog::error;
+use simplelog::info;
+
 use crate::commands::consts;
 use crate::commands::error::CliError;
-use crate::commands::helpers::{
-    build_table, construct_url, parse_api_response, resolve_stack, CliContext,
-};
+use crate::commands::helpers::build_table;
+use crate::commands::helpers::construct_url;
+use crate::commands::helpers::parse_api_response;
+use crate::commands::helpers::resolve_stack;
+use crate::commands::helpers::CliContext;
 use crate::commands::stacks::args::resource_control::StackResourceControlCommand;
 use crate::commands::stacks::models::deploy::Stack;
-use simplelog::{debug, error, info};
 
 pub(crate) fn handler(
     command: StackResourceControlCommand,

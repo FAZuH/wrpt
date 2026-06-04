@@ -7,11 +7,17 @@ mod teams;
 mod users;
 mod wrpt;
 
-use crate::commands::helpers::CliContext;
-use crate::commands::wrpt::{init_logger, WrptArgs};
-use crate::commands::Command::{Endpoint, Stack, Team, User};
-use clap::{Parser, Subcommand};
+use clap::Parser;
+use clap::Subcommand;
 use simplelog::error;
+
+use crate::commands::helpers::CliContext;
+use crate::commands::wrpt::init_logger;
+use crate::commands::wrpt::WrptArgs;
+use crate::commands::Command::Endpoint;
+use crate::commands::Command::Stack;
+use crate::commands::Command::Team;
+use crate::commands::Command::User;
 
 #[derive(Debug, Subcommand)]
 pub(crate) enum Command {

@@ -1,21 +1,33 @@
+use std::env;
+use std::fs::File;
+use std::io::BufRead;
+use std::io::{self};
+use std::path::PathBuf;
+use std::time::Duration;
+
+use prettytable::cell;
+use prettytable::format::FormatBuilder;
+use prettytable::format::LinePosition;
+use prettytable::format::LineSeparator;
+use prettytable::Cell;
+use prettytable::Row;
+use prettytable::Table;
+use reqwest::blocking::Client;
+use reqwest::blocking::Response;
+use reqwest::header::HeaderName;
+use reqwest::header::HeaderValue;
+use reqwest::Url;
+use serde::de::DeserializeOwned;
+use serde_json::Value::Null;
+use simplelog::debug;
+use simplelog::error;
+use simplelog::warn;
+
 use crate::commands::consts;
 use crate::commands::error::CliError;
 use crate::commands::stacks::handlers::list::fetch_stacks;
 use crate::commands::stacks::models::deploy::EnvVar;
 use crate::commands::wrpt::GlobalArgs;
-use prettytable::format::{FormatBuilder, LinePosition, LineSeparator};
-use prettytable::{cell, Cell, Row, Table};
-use reqwest::blocking::{Client, Response};
-use reqwest::header::{HeaderName, HeaderValue};
-use reqwest::Url;
-use serde::de::DeserializeOwned;
-use serde_json::Value::Null;
-use simplelog::{debug, error, warn};
-use std::env;
-use std::fs::File;
-use std::io::{self, BufRead};
-use std::path::PathBuf;
-use std::time::Duration;
 
 /// Shared context holding a reusable HTTP client and resolved configuration.
 pub(crate) struct CliContext {
@@ -317,9 +329,11 @@ pub(crate) fn parse_env_file(file_path: Option<PathBuf>) -> Result<Vec<EnvVar>, 
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::io::Write;
+
     use tempfile::NamedTempFile;
+
+    use super::*;
 
     // --- parse_env_file tests ---
 

@@ -4,7 +4,8 @@ pub mod models;
 
 use crate::commands::error::CliError;
 use crate::commands::helpers::CliContext;
-use crate::commands::stacks::args::{StackCommand, StackSubCommand};
+use crate::commands::stacks::args::StackCommand;
+use crate::commands::stacks::args::StackSubCommand;
 
 pub fn handler(stack: StackCommand, ctx: &CliContext) -> Result<(), CliError> {
     let command = stack.command;
