@@ -13,7 +13,7 @@ pub(crate) fn handler(command: StackRemoveCommand, ctx: &CliContext) -> Result<(
     debug!("command = {:?}", command);
 
     info!("Getting stack info...");
-    let stack_id = resolve_stack(ctx, &command.stack_name)?;
+    let stack_id = resolve_stack(ctx, &command.stack_name, command.endpoint)?;
 
     info!(
         "Stack \"{}\" exists (id = {})",
