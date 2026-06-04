@@ -71,15 +71,15 @@ jobs:
         if: inputs.upload-binary
         run: |
           mkdir -p artifacts
-          cp target/${{ inputs.release && 'release' || 'debug' }}/autoport artifacts/autoport-linux-x64
-          chmod +x artifacts/autoport-linux-x64
+          cp target/${{ inputs.release && 'release' || 'debug' }}/wrpt artifacts/wrpt-linux-x64
+          chmod +x artifacts/wrpt-linux-x64
 
       - name: Upload Binary Artifact
         if: inputs.upload-binary
         uses: actions/upload-artifact@v4
         with:
-          name: autoport-linux-x64
-          path: artifacts/autoport-linux-x64
+          name: wrpt-linux-x64
+          path: artifacts/wrpt-linux-x64
 
   build-docker:
     name: Build Docker Image
@@ -104,16 +104,16 @@ jobs:
       - name: Build Docker Image
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: ./docker
           platforms: linux/amd64
           push: false
           load: true
-          tags: autoport:build
+          tags: wrpt:build
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Save Docker Image
-        run: docker save autoport:build -o /tmp/docker-image.tar
+        run: docker save wrpt:build -o /tmp/docker-image.tar
 
       - name: Upload Docker Image Artifact
         uses: actions/upload-artifact@v4

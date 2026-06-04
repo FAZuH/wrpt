@@ -14,7 +14,7 @@ jobs:
     name: Release
     uses: ./.github/workflows/_release.yml
     with:
-      binary-name: autoport
+      binary-name: wrpt
       platforms: linux
       publish-crates: false
     secrets: inherit
@@ -48,7 +48,7 @@ jobs:
       - name: Tag and Push
         run: |
           TAG=${{ needs.release.outputs.tag }}
-          docker tag autoport:build ghcr.io/${{ steps.repo.outputs.owner }}/autoport:latest
-          docker tag autoport:build ghcr.io/${{ steps.repo.outputs.owner }}/autoport:${TAG}
-          docker push ghcr.io/${{ steps.repo.outputs.owner }}/autoport:latest
-          docker push ghcr.io/${{ steps.repo.outputs.owner }}/autoport:${TAG}
+          docker tag wrpt:build ghcr.io/${{ steps.repo.outputs.owner }}/wrpt:latest
+          docker tag wrpt:build ghcr.io/${{ steps.repo.outputs.owner }}/wrpt:${TAG}
+          docker push ghcr.io/${{ steps.repo.outputs.owner }}/wrpt:latest
+          docker push ghcr.io/${{ steps.repo.outputs.owner }}/wrpt:${TAG}
