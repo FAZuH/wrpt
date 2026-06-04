@@ -468,3 +468,9 @@ The changelog is available in the [CHANGELOG.md](./CHANGELOG.md) file.
 The source code of this project is licensed under the [MIT license](https://opensource.org/license/MIT). 
 
 See [LICENSE](LICENSE) file for reference.
+
+---
+
+## Credit where credit is due
+
+This repository is a fork of [https://github.com/wahl-dev/wrpt](https://github.com/wahl-dev/wrpt).
