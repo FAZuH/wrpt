@@ -131,14 +131,14 @@ jobs:
             });
             const parseSections = function (text) {
               const bumps = {};
-              const bumpMatch = text.match(/^## Bump\s*\n([\s\S]*?)(?=^## |\n## |\n\n## |\z)/m);
+              const bumpMatch = text.match(/^## Bump\s*\n([\s\S]*?)(?=(?:^|\n)\s*##(?!#)|(?![\s\S]))/m);
               if (bumpMatch) {
                 bumpMatch[1].split('\n').forEach(function (line) {
                   const parts = line.trim().match(/^([a-z-]+)\s*:\s*(major|minor|patch)$/);
                   if (parts) bumps[parts[1]] = parts[2];
                 });
               }
-              const overrideMatch = text.match(/^## Override Changelog\s*\n([\s\S]*?)(?=^## |\n## |\z)/m);
+              const overrideMatch = text.match(/^## Override Changelog\s*\n([\s\S]*?)(?=(?:^|\n)\s*##(?!#)|(?![\s\S]))/m);
               const cl = overrideMatch ? overrideMatch[1].trim() : null;
               return { bumps, cl };
             };

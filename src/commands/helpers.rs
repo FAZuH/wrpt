@@ -25,6 +25,7 @@ use simplelog::warn;
 
 use crate::commands::autoport::GlobalArgs;
 use crate::commands::consts;
+use crate::commands::endpoints::handlers::list::fetch_endpoints;
 use crate::commands::error::CliError;
 use crate::commands::stacks::handlers::list::fetch_stacks;
 use crate::commands::stacks::models::deploy::EnvVar;
@@ -68,25 +69,59 @@ pub(crate) fn create_client(api_key: &str, insecure: bool) -> Result<Client, Cli
 pub(crate) fn get_stack_id_from_name(
     ctx: &CliContext,
     name: &str,
+    endpoint_id: u32,
 ) -> Result<Option<u32>, CliError> {
-    let stacks = fetch_stacks(ctx)?;
+    Ok(fetch_stacks(ctx)?
+        .iter()
+        .find(|s| s.name == name && s.endpoint_id == endpoint_id)
+        .map(|s| s.id))
+}
 
-    for stack in stacks {
-        if stack.name.eq(name) {
-            return Ok(Some(stack.id));
-        }
-    }
-
-    Ok(None)
+pub(crate) fn get_endpoint_id_from_name(
+    ctx: &CliContext,
+    name: &str,
+) -> Result<Option<u32>, CliError> {
+    Ok(fetch_endpoints(ctx)?
+        .iter()
+        .find(|s| s.name == name)
+        .map(|s| s.id))
 }
 
 /// Resolves a stack by name, returning its ID or an error if it doesn't exist.
-pub(crate) fn resolve_stack(ctx: &CliContext, stack_name: &str) -> Result<u32, CliError> {
-    let stack_id = get_stack_id_from_name(ctx, stack_name)?;
+pub(crate) fn resolve_stack(
+    ctx: &CliContext,
+    stack_name: &str,
+    endpoint_id: u32,
+) -> Result<u32, CliError> {
+    let stack_id = get_stack_id_from_name(ctx, stack_name, endpoint_id)?;
     stack_id.ok_or_else(|| {
         error!("Stack \"{}\" does not exist", stack_name);
         CliError::Api(format!("stack \"{}\" does not exist", stack_name))
     })
+}
+
+/// Resolves an endpoint by name, returning its ID or an error if it doesn't exist.
+pub(crate) fn resolve_endpoint(ctx: &CliContext, endpoint_name: &str) -> Result<u32, CliError> {
+    let endpoint_id = get_endpoint_id_from_name(ctx, endpoint_name)?;
+    endpoint_id.ok_or_else(|| {
+        error!("Endpoint \"{}\" does not exist", endpoint_name);
+        CliError::Api(format!("endpoint \"{}\" does not exist", endpoint_name))
+    })
+}
+
+/// Returns an endpoint ID from either an explicit ID or a name lookup.
+pub(crate) fn choose_endpoint(
+    ctx: &CliContext,
+    endpoint_id: Option<u32>,
+    endpoint_name: Option<String>,
+) -> Result<u32, CliError> {
+    match (endpoint_id, endpoint_name) {
+        (Some(id), _) => Ok(id),
+        (None, Some(name)) => resolve_endpoint(ctx, &name),
+        (None, None) => Err(CliError::Config(
+            "param `endpoint_id` or `endpoint_name` must be set".to_string(),
+        )),
+    }
 }
 
 pub(crate) fn get_swarm_id_from_endpoint_id(
@@ -225,6 +260,7 @@ fn process_table_value(value: &serde_json::Value) -> Cell {
                 cell!(value.to_string())
             }
         }
+        serde_json::Value::Null => cell!(""),
         serde_json::Value::String(s) => cell!(s),
         _ => cell!(value.to_string()),
     }
@@ -539,6 +575,36 @@ mod tests {
     fn create_client_valid() {
         let client = create_client("test-token", false);
         assert!(client.is_ok());
+    }
+
+    // --- choose_endpoint tests ---
+
+    fn dummy_context() -> CliContext {
+        CliContext {
+            client: create_client("test-token", false).unwrap(),
+            base_url: "https://example.com".to_string(),
+        }
+    }
+
+    #[test]
+    fn choose_endpoint_returns_id_directly() {
+        let ctx = dummy_context();
+        let result = choose_endpoint(&ctx, Some(42), None);
+        assert_eq!(result.unwrap(), 42);
+    }
+
+    #[test]
+    fn choose_endpoint_id_takes_priority_over_name() {
+        let ctx = dummy_context();
+        let result = choose_endpoint(&ctx, Some(42), Some("ignored".to_string()));
+        assert_eq!(result.unwrap(), 42);
+    }
+
+    #[test]
+    fn choose_endpoint_missing_both_errors() {
+        let ctx = dummy_context();
+        let result = choose_endpoint(&ctx, None, None);
+        assert!(matches!(result.unwrap_err(), CliError::Config(_)));
     }
 
     // --- CliError display ---

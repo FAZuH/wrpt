@@ -6,6 +6,7 @@ use crate::commands::consts;
 use crate::commands::error::CliError;
 use crate::commands::helpers::CliContext;
 use crate::commands::helpers::build_table;
+use crate::commands::helpers::choose_endpoint;
 use crate::commands::helpers::construct_url;
 use crate::commands::helpers::parse_api_response;
 use crate::commands::helpers::resolve_stack;
@@ -18,8 +19,10 @@ pub(crate) fn handler(
 ) -> Result<(), CliError> {
     debug!("command = {:?}", command);
 
+    let endpoint_id = choose_endpoint(ctx, command.endpoint, command.endpoint_name)?;
+
     info!("Getting stack info...");
-    let stack_id = resolve_stack(ctx, &command.stack_name)?;
+    let stack_id = resolve_stack(ctx, &command.stack_name, endpoint_id)?;
 
     info!(
         "Stack \"{}\" exists (id = {})",
@@ -30,7 +33,7 @@ pub(crate) fn handler(
         "Display the ResourceControl details of stack \"{}\"",
         command.stack_name
     );
-    let stack = inspect_stack(ctx, stack_id, command.endpoint)?;
+    let stack = inspect_stack(ctx, stack_id, endpoint_id)?;
 
     let stack = stack.first().ok_or_else(|| {
         CliError::Api(format!(
