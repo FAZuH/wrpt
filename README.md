@@ -1,12 +1,12 @@
-<h1 align="center">WRPT</h1>
+<h1 align="center">autoport</h1>
 
 <h4 align="center">A minimal <a href="https://portainer.io/" target="_blank">Portainer</a> cli built with <a href="https://www.rust-lang.org" target="_blank">Rust</a></h4>
 
 <p align="center">
-    <a href="https://crates.io/crates/wrpt"><img src="https://img.shields.io/crates/v/wrpt.svg" alt=""/></a>
-    <a href="https://hub.docker.com/repository/docker/wahl/wrpt"><img src="https://img.shields.io/docker/v/wahl/wrpt?sort=semver&label=dockerhub&color=blue" alt=""/></a>
-    <a href="https://github.com/wahl-dev/wrpt/actions?query=workflow:Tests"><img src="https://github.com/wahl-dev/wrpt/workflows/Tests/badge.svg" alt=""/></a>
-    <a href="./LICENSE"><img src="https://img.shields.io/crates/l/wrpt.svg" alt=""/></a>
+    <a href="https://crates.io/crates/autoport"><img src="https://img.shields.io/crates/v/autoport.svg" alt=""/></a>
+    <a href="https://hub.docker.com/repository/docker/wahl/autoport"><img src="https://img.shields.io/docker/v/wahl/autoport?sort=semver&label=dockerhub&color=blue" alt=""/></a>
+    <a href="https://github.com/wahl-dev/autoport/actions?query=workflow:Tests"><img src="https://github.com/wahl-dev/autoport/workflows/Tests/badge.svg" alt=""/></a>
+    <a href="./LICENSE"><img src="https://img.shields.io/crates/l/autoport.svg" alt=""/></a>
 </p>
 
 <p align="center">
@@ -25,9 +25,9 @@
 
 ## About
 
-WRPT is a lightweight command-line interface designed to streamline the deployment of Docker-Compose stacks on Portainer.  
+autoport is a lightweight command-line interface designed to streamline the deployment of Docker-Compose stacks on Portainer.  
 
-While its primary focus is on stack deployment, it also provides additional features such as stack/endpoint listing and access control management (wip). WRPT is designed not only for manual usage but also for integration into CI/CD pipelines, making it a versatile tool for automating deployment workflows.
+While its primary focus is on stack deployment, it also provides additional features such as stack/endpoint listing and access control management (wip). autoport is designed not only for manual usage but also for integration into CI/CD pipelines, making it a versatile tool for automating deployment workflows.
 
 This project draws inspiration from <a href="https://gitlab.com/tortuetorche" target="_blank">@tortuetorche</a>'s work on <a href="https://gitlab.com/psuapp/psu" target="_blank">psuapp/psy</a>.  
 
@@ -37,7 +37,7 @@ It is also my first project written in Rust and is under **active development**,
 
 ## Roadmap
 
-Here are the planned enhancements and features for WRPT:  
+Here are the planned enhancements and features for autoport:  
 
 - 🚧 **Access Control Management:** Enable stack deployments with fine-grained access control, allowing assignment to specific users and/or groups.  
 - ✅ **Comprehensive Documentation:** Write detailed usage guides, including setup instructions for integration into CI/CD pipelines on GitLab and GitHub.
@@ -60,22 +60,22 @@ Here are the planned enhancements and features for WRPT:
 ### From crates.io
 
 ```bash
-cargo install wrpt
+cargo install autoport
 ```
 
 ### Docker
 
 ```bash
-docker pull wahl/wrpt:latest
+docker pull wahl/autoport:latest
 ```
 
 ### From source
 
 ```bash
-git clone https://github.com/wahl-dev/wrpt.git
-cd wrpt
+git clone https://github.com/wahl-dev/autoport.git
+cd autoport
 cargo build --release
-# Binary available at ./target/release/wrpt
+# Binary available at ./target/release/autoport
 ```
 
 ---
@@ -98,19 +98,19 @@ export PORTAINER_ACCESS_TOKEN="your-access-token"
 ### 3. List your endpoints
 
 ```bash
-wrpt endpoint list
+autoport endpoint list
 ```
 
 ### 4. List your stacks
 
 ```bash
-wrpt stack list
+autoport stack list
 ```
 
 ### 5. Deploy a stack
 
 ```bash
-wrpt stack deploy my-stack \
+autoport stack deploy my-stack \
   --endpoint 1 \
   --compose-file docker-compose.yml
 ```
@@ -118,7 +118,7 @@ wrpt stack deploy my-stack \
 You can also pass environment variables to the stack:
 
 ```bash
-wrpt stack deploy my-stack \
+autoport stack deploy my-stack \
   --endpoint 1 \
   --compose-file docker-compose.yml \
   --env-file .env
@@ -169,7 +169,7 @@ wrpt stack deploy my-stack \
 ```
 Deploy a stack
 
-Usage: wrpt stack deploy [OPTIONS] --endpoint <ENDPOINT> --compose-file <COMPOSE_FILE> <STACK_NAME>
+Usage: autoport stack deploy [OPTIONS] --endpoint <ENDPOINT> --compose-file <COMPOSE_FILE> <STACK_NAME>
 
 Arguments:
   <STACK_NAME>  Name of the stack
@@ -193,7 +193,7 @@ Options:
 ```
 Remove a stack
 
-Usage: wrpt stack remove [OPTIONS] --endpoint <ENDPOINT> <STACK_NAME>
+Usage: autoport stack remove [OPTIONS] --endpoint <ENDPOINT> <STACK_NAME>
 
 Arguments:
   <STACK_NAME>  Name of the stack
@@ -213,7 +213,7 @@ Options:
 ```
 Display the ResourceControl details of a specific stack
 
-Usage: wrpt stack resource-control [OPTIONS] --endpoint <ENDPOINT> <STACK_NAME>
+Usage: autoport stack resource-control [OPTIONS] --endpoint <ENDPOINT> <STACK_NAME>
 
 Arguments:
   <STACK_NAME>  Name of the stack
@@ -233,7 +233,7 @@ Options:
 ```
 Starts a stack
 
-Usage: wrpt stack start [OPTIONS] --endpoint <ENDPOINT> <STACK_NAME>
+Usage: autoport stack start [OPTIONS] --endpoint <ENDPOINT> <STACK_NAME>
 
 Arguments:
   <STACK_NAME>  Name of the stack
@@ -253,7 +253,7 @@ Options:
 ```
 Stops a stack
 
-Usage: wrpt stack stop [OPTIONS] --endpoint <ENDPOINT> <STACK_NAME>
+Usage: autoport stack stop [OPTIONS] --endpoint <ENDPOINT> <STACK_NAME>
 
 Arguments:
   <STACK_NAME>  Name of the stack
@@ -273,7 +273,7 @@ Options:
 ```
 List all stacks based on the current user authorizations
 
-Usage: wrpt stack list [OPTIONS]
+Usage: autoport stack list [OPTIONS]
 
 Options:
   -l, --url <URL>                    URL of the Portainer instance
@@ -291,7 +291,7 @@ Options:
 ```
 List endpoints
 
-Usage: wrpt endpoint list [OPTIONS]
+Usage: autoport endpoint list [OPTIONS]
 
 Options:
   -l, --url <URL>                    URL of the Portainer instance
@@ -309,7 +309,7 @@ Options:
 ```
 List teams
 
-Usage: wrpt team list [OPTIONS]
+Usage: autoport team list [OPTIONS]
 
 Options:
   -l, --url <URL>                    URL of the Portainer instance
@@ -327,7 +327,7 @@ Options:
 ```
 List users
 
-Usage: wrpt user list [OPTIONS]
+Usage: autoport user list [OPTIONS]
 
 Options:
   -l, --url <URL>                    URL of the Portainer instance
@@ -342,16 +342,16 @@ Options:
 
 ## Docker
 
-WRPT is also available as a Docker image for easier usage and integration. The image is hosted on Docker Hub: [wahl/wrpt](https://hub.docker.com/repository/docker/wahl/wrpt).
+autoport is also available as a Docker image for easier usage and integration. The image is hosted on Docker Hub: [wahl/autoport](https://hub.docker.com/repository/docker/wahl/autoport).
 
 ### Available Tags
 
-The available tags for the Docker image can be found [here](https://hub.docker.com/repository/docker/wahl/wrpt/tags).
+The available tags for the Docker image can be found [here](https://hub.docker.com/repository/docker/wahl/autoport/tags).
 
 ### Pull the Docker image
 
 ```bash
-docker pull wahl/wrpt:latest
+docker pull wahl/autoport:latest
 ```
 
 ### Example usage
@@ -362,7 +362,7 @@ Below is an example of using the Docker image to list stacks:
 docker run -it --rm \
   -e PORTAINER_URL="$PORTAINER_URL" \
   -e PORTAINER_ACCESS_TOKEN="$PORTAINER_ACCESS_TOKEN" \
-  wahl/wrpt:latest stack list
+  wahl/autoport:latest stack list
 ```
 
 ### Notes
@@ -372,7 +372,7 @@ docker run -it --rm \
 
 ## CI/CD Integration
 
-WRPT's Docker image makes it easy to integrate stack deployments into your CI/CD pipelines.
+autoport's Docker image makes it easy to integrate stack deployments into your CI/CD pipelines.
 
 ### GitHub Actions
 
@@ -389,7 +389,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     container:
-      image: wahl/wrpt:latest
+      image: wahl/autoport:latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -399,7 +399,7 @@ jobs:
           PORTAINER_URL: ${{ secrets.PORTAINER_URL }}
           PORTAINER_ACCESS_TOKEN: ${{ secrets.PORTAINER_ACCESS_TOKEN }}
         run: |
-          wrpt stack deploy my-stack \
+          autoport stack deploy my-stack \
             --endpoint ${{ vars.PORTAINER_ENDPOINT }} \
             --compose-file docker-compose.yml
 ```
@@ -427,11 +427,11 @@ stages:
 
 deploy-stack:
   stage: deploy
-  image: wahl/wrpt:latest
+  image: wahl/autoport:latest
   only:
     - main
   script:
-    - wrpt stack deploy my-stack
+    - autoport stack deploy my-stack
         --endpoint $PORTAINER_ENDPOINT
         --compose-file docker-compose.yml
   variables:
@@ -452,8 +452,8 @@ deploy-stack:
 - **Never hardcode tokens** in your pipeline files. Always use secrets/protected variables.
 - **Use `--insecure` only if necessary** (e.g. self-signed certificates in internal environments). Prefer proper SSL certificates.
 - **Use `-vv` for debugging** pipeline failures — it enables verbose output to help diagnose issues.
-- **Verify your endpoint first** by running `wrpt endpoint list` as a preliminary step to confirm connectivity.
-- **Pin the Docker image tag** to a specific version (e.g. `wahl/wrpt:0.6.3`) in production pipelines for reproducible deployments.
+- **Verify your endpoint first** by running `autoport endpoint list` as a preliminary step to confirm connectivity.
+- **Pin the Docker image tag** to a specific version (e.g. `wahl/autoport:0.6.3`) in production pipelines for reproducible deployments.
 
 ---
 

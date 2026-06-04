@@ -3,10 +3,10 @@ use simplelog::info;
 
 use crate::commands::consts;
 use crate::commands::error::CliError;
+use crate::commands::helpers::CliContext;
 use crate::commands::helpers::construct_url;
 use crate::commands::helpers::handle_api_response;
 use crate::commands::helpers::resolve_stack;
-use crate::commands::helpers::CliContext;
 use crate::commands::stacks::args::start::StackStartCommand;
 
 pub(crate) fn handler(command: StackStartCommand, ctx: &CliContext) -> Result<(), CliError> {

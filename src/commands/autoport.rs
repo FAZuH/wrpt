@@ -12,7 +12,7 @@ use crate::commands::Command;
 
 #[derive(Debug, Parser)]
 #[command(author, version, about, long_about = None, styles=get_styles())]
-pub(crate) struct WrptArgs {
+pub(crate) struct AutoportArgs {
     #[command(flatten)]
     pub global_args: GlobalArgs,
 
@@ -47,7 +47,7 @@ pub(crate) struct GlobalArgs {
     pub color: ClapColorChoice,
 }
 
-pub(crate) fn init_logger(args: &WrptArgs) {
+pub(crate) fn init_logger(args: &AutoportArgs) {
     let mut level_filter = LevelFilter::Off;
 
     if !args.global_args.quiet {

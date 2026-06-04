@@ -35,7 +35,7 @@ from_latest_tag = false
 path = "CHANGELOG.md"
 template = "remote"
 remote = "github.com"
-repository = "wrpt"
+repository = "autoport"
 owner = "wahl-dev"
 authors = [
     { signature = "Wahib LAROUI", username = "Wahib-L" },

@@ -1,13 +1,17 @@
 [package]
-name = "wrpt"
+name = "autoport"
+
+
 version = "0.6.4"
-edition = "2021"
+
+
+edition = "2024"
 license = "MIT"
 description = "A minimal Portainer cli built with Rust"
 readme = "README.md"
 keywords = ["portainer", "cli", "deploy", "docker", "swarm"]
 categories = ["command-line-utilities"]
-repository = "https://github.com/wahl-dev/wrpt"
+repository = "https://github.com/FAZuH/autoport"
 
 [dependencies]
 clap = { version = "4.5.23", features = ["derive"] }

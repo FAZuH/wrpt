@@ -10,11 +10,11 @@ FROM debian:12-slim AS final
 RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates curl \
     && rm -rf /var/lib/apt/lists/*
 
-RUN useradd -m -u 1000 wrpt
+RUN useradd -m -u 1000 autoport
 
-COPY --from=build /app/target/release/wrpt /usr/bin/
+COPY --from=build /app/target/release/autoport /usr/bin/
 COPY --from=docker/compose-bin:v2.32.4 /docker-compose /usr/bin/docker-compose
 
-USER wrpt
+USER autoport
 
-ENTRYPOINT ["/usr/bin/wrpt"]
+ENTRYPOINT ["/usr/bin/autoport"]

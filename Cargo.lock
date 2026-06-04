@@ -94,6 +94,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ace50bade8e6234aa140d9a2f552bbee1db4d353f69b8217bc503490fc1a9f26"
 
 [[package]]
+name = "autoport"
+version = "0.6.4"
+dependencies = [
+ "anstyle",
+ "chrono",
+ "clap",
+ "const_format",
+ "log",
+ "prettytable-rs",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "serde_repr",
+ "simplelog",
+ "tempfile",
+]
+
+[[package]]
 name = "backtrace"
 version = "0.3.74"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1875,24 +1893,6 @@ name = "writeable"
 version = "0.5.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1e9df38ee2d2c3c5948ea468a8406ff0db0b29ae1ffde1bcf20ef305bcc95c51"
-
-[[package]]
-name = "wrpt"
-version = "0.6.4"
-dependencies = [
- "anstyle",
- "chrono",
- "clap",
- "const_format",
- "log",
- "prettytable-rs",
- "reqwest",
- "serde",
- "serde_json",
- "serde_repr",
- "simplelog",
- "tempfile",
-]
 
 [[package]]
 name = "yoke"

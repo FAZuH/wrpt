@@ -1,3 +1,4 @@
+mod autoport;
 mod consts;
 mod endpoints;
 pub(crate) mod error;
@@ -5,19 +6,18 @@ mod helpers;
 mod stacks;
 mod teams;
 mod users;
-mod wrpt;
 
 use clap::Parser;
 use clap::Subcommand;
 use simplelog::error;
 
-use crate::commands::helpers::CliContext;
-use crate::commands::wrpt::init_logger;
-use crate::commands::wrpt::WrptArgs;
 use crate::commands::Command::Endpoint;
 use crate::commands::Command::Stack;
 use crate::commands::Command::Team;
 use crate::commands::Command::User;
+use crate::commands::autoport::AutoportArgs;
+use crate::commands::autoport::init_logger;
+use crate::commands::helpers::CliContext;
 
 #[derive(Debug, Subcommand)]
 pub(crate) enum Command {
@@ -35,7 +35,7 @@ pub(crate) enum Command {
 }
 
 pub fn init() -> Result<(), ()> {
-    let args: WrptArgs = WrptArgs::parse();
+    let args: AutoportArgs = AutoportArgs::parse();
 
     init_logger(&args);
 

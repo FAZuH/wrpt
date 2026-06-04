@@ -4,10 +4,10 @@ use crate::commands::consts;
 use crate::commands::endpoints::args::list::EndpointListCommand;
 use crate::commands::endpoints::models::list::EndpointList;
 use crate::commands::error::CliError;
+use crate::commands::helpers::CliContext;
 use crate::commands::helpers::build_table;
 use crate::commands::helpers::construct_url;
 use crate::commands::helpers::parse_api_response;
-use crate::commands::helpers::CliContext;
 
 pub(crate) fn handler(command: EndpointListCommand, ctx: &CliContext) -> Result<(), CliError> {
     debug!("command = {:?}", command);

@@ -5,29 +5,29 @@ use std::io::{self};
 use std::path::PathBuf;
 use std::time::Duration;
 
+use prettytable::Cell;
+use prettytable::Row;
+use prettytable::Table;
 use prettytable::cell;
 use prettytable::format::FormatBuilder;
 use prettytable::format::LinePosition;
 use prettytable::format::LineSeparator;
-use prettytable::Cell;
-use prettytable::Row;
-use prettytable::Table;
+use reqwest::Url;
 use reqwest::blocking::Client;
 use reqwest::blocking::Response;
 use reqwest::header::HeaderName;
 use reqwest::header::HeaderValue;
-use reqwest::Url;
 use serde::de::DeserializeOwned;
 use serde_json::Value::Null;
 use simplelog::debug;
 use simplelog::error;
 use simplelog::warn;
 
+use crate::commands::autoport::GlobalArgs;
 use crate::commands::consts;
 use crate::commands::error::CliError;
 use crate::commands::stacks::handlers::list::fetch_stacks;
 use crate::commands::stacks::models::deploy::EnvVar;
-use crate::commands::wrpt::GlobalArgs;
 
 /// Shared context holding a reusable HTTP client and resolved configuration.
 pub(crate) struct CliContext {
@@ -447,7 +447,9 @@ mod tests {
 
     #[test]
     fn get_base_url_missing() {
-        env::remove_var("PORTAINER_URL");
+        unsafe {
+            env::remove_var("PORTAINER_URL");
+        }
         let args = GlobalArgs {
             url: None,
             access_token: None,
@@ -476,7 +478,9 @@ mod tests {
 
     #[test]
     fn get_access_token_missing() {
-        env::remove_var("PORTAINER_ACCESS_TOKEN");
+        unsafe {
+            env::remove_var("PORTAINER_ACCESS_TOKEN");
+        }
         let args = GlobalArgs {
             url: None,
             access_token: None,

@@ -5,13 +5,13 @@ use simplelog::info;
 
 use crate::commands::consts;
 use crate::commands::error::CliError;
+use crate::commands::helpers::CliContext;
 use crate::commands::helpers::build_table;
 use crate::commands::helpers::construct_url;
 use crate::commands::helpers::get_stack_id_from_name;
 use crate::commands::helpers::get_swarm_id_from_endpoint_id;
 use crate::commands::helpers::parse_api_response;
 use crate::commands::helpers::parse_env_file;
-use crate::commands::helpers::CliContext;
 use crate::commands::stacks::args::deploy::StackDeployCommand;
 use crate::commands::stacks::models::deploy::Stack;
 use crate::commands::stacks::models::deploy::StackDeployStandaloneCreatePayload;

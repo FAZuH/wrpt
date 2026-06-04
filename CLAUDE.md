@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-**WRPT** is a Rust CLI tool for deploying and managing Docker Compose stacks on Portainer. It supports both manual usage and CI/CD pipeline integration. Published on [crates.io](https://crates.io/crates/wrpt) and [Docker Hub](https://hub.docker.com/r/wahl/wrpt).
+**autoport** is a Rust CLI tool for deploying and managing Docker Compose stacks on Portainer. It supports both manual usage and CI/CD pipeline integration. Published on [crates.io](https://crates.io/crates/autoport) and [Docker Hub](https://hub.docker.com/r/wahl/autoport).
 
 - **Language:** Rust (Edition 2021)
 - **Version:** 0.6.3
@@ -35,7 +35,7 @@ src/
 ├── main.rs                    # Entry point (minimal)
 └── commands/
     ├── mod.rs                 # Command dispatch/routing, CliContext initialization
-    ├── wrpt.rs                # CLI args struct, logger init, global args
+    ├── autoport.rs                # CLI args struct, logger init, global args
     ├── consts.rs              # API endpoint path constants
     ├── error.rs               # CliError enum (Config, Api, Io, Http)
     ├── helpers.rs             # Shared utilities (CliContext, HTTP client, table formatting, env parsing)
