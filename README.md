@@ -118,7 +118,7 @@ autoport stack deploy my-stack \
 You can also pass environment variables to the stack, or select endpoint by name:
 
 ```bash
-wrpt stack deploy my-stack \
+autoport stack deploy my-stack \
   --endpoint-name my-docker-endpoint \
   --compose-file docker-compose.yml \
   --env-file .env
@@ -128,7 +128,7 @@ Or pass a directory containing your compose file and .env:
 
 ```bash
 # Loads my/stack/docker-compose.yml with env my/stack/.env
-wrpt stack deploy my-stack \
+autoport stack deploy my-stack \
   --endpoint-name my-docker-endpoint \
   --stack-dir my/stack/
 
@@ -181,7 +181,7 @@ wrpt stack deploy my-stack \
 ```
 Deploy a stack
 
-Usage: wrpt stack deploy [OPTIONS] <--endpoint <ENDPOINT>|--endpoint-name <ENDPOINT_NAME>> <--compose-file <COMPOSE_FILE>|--stack-dir <STACK_DIR>> <STACK_NAME>
+Usage: autoport stack deploy [OPTIONS] <--endpoint <ENDPOINT>|--endpoint-name <ENDPOINT_NAME>> <--compose-file <COMPOSE_FILE>|--stack-dir <STACK_DIR>> <STACK_NAME>
 
 Arguments:
   <STACK_NAME>  Name of the stack
@@ -209,7 +209,7 @@ Options:
 ```
 Remove a stack
 
-Usage: wrpt stack remove [OPTIONS] <--endpoint <ENDPOINT>|--endpoint-name <ENDPOINT_NAME>> <STACK_NAME>
+Usage: autoport stack remove [OPTIONS] <--endpoint <ENDPOINT>|--endpoint-name <ENDPOINT_NAME>> <STACK_NAME>
 
 Arguments:
   <STACK_NAME>  Name of the stack
@@ -231,7 +231,7 @@ Options:
 ```
 Display the ResourceControl details of a specific stack
 
-Usage: wrpt stack resource-control [OPTIONS] <--endpoint <ENDPOINT>|--endpoint-name <ENDPOINT_NAME>> <STACK_NAME>
+Usage: autoport stack resource-control [OPTIONS] <--endpoint <ENDPOINT>|--endpoint-name <ENDPOINT_NAME>> <STACK_NAME>
 
 Arguments:
   <STACK_NAME>  Name of the stack
@@ -253,7 +253,7 @@ Options:
 ```
 Starts a Stack
 
-Usage: wrpt stack start [OPTIONS] <--endpoint <ENDPOINT>|--endpoint-name <ENDPOINT_NAME>> <STACK_NAME>
+Usage: autoport stack start [OPTIONS] <--endpoint <ENDPOINT>|--endpoint-name <ENDPOINT_NAME>> <STACK_NAME>
 
 Arguments:
   <STACK_NAME>  Name of the stack
@@ -275,7 +275,7 @@ Options:
 ```
 Stops a Stack
 
-Usage: wrpt stack stop [OPTIONS] <--endpoint <ENDPOINT>|--endpoint-name <ENDPOINT_NAME>> <STACK_NAME>
+Usage: autoport stack stop [OPTIONS] <--endpoint <ENDPOINT>|--endpoint-name <ENDPOINT_NAME>> <STACK_NAME>
 
 Arguments:
   <STACK_NAME>  Name of the stack
